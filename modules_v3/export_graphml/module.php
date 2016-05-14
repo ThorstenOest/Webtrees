@@ -162,6 +162,7 @@ class ExportGraphmlModule extends AbstractModule implements
 		echo '<td class="descriptionbox width30 wrap">', I18N::translate ( 
 				'Node description' ), '</td>';
 
+		
 		// 2,1 Data
 		echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate (
 				'Individual template' ), '</td>';
