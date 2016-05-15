@@ -200,12 +200,13 @@ class ExportGraphmlModule extends AbstractModule implements
 		
 		// 4,1 Data
 		echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate (
-						'Keywords' ), '</td>';
+						'Syntax' ), '</td>';
 				
 		// 5,2 Node label
-		echo '<td class="optionbox" colspan="2">' .
+		echo '<td class="optionbox" colspan="1">' .
 					'<table>'
-					. '<td>@GivenName</td><td>Given Name'
+					. '<td colspan="2"> keywords</td>'
+					. '<tr><td>@GivenName</td><td>Given Name'
 					. '<tr><td>@SurName</td><td>Sur name'
 					. '<tr><td>@BirthDate</td><td>Birth date'
 					. '<tr><td>@BirthPlace</td><td>Birth place'
@@ -216,7 +217,22 @@ class ExportGraphmlModule extends AbstractModule implements
 					. '<tr><td>@Occupation</td><td>Occupation'
 							. '</table></td>';
 				
-				// 2,1 Data
+		// 5,2 Node label
+		echo '<td class="optionbox" colspan="1">' .
+					'<table>'
+					. '<td colspan="2"> formats</td>'
+					. '<tr><td>&</td><td>Given Name'
+					. '<tr><td>@SurName</td><td>Sur name'
+					. '<tr><td>@BirthDate</td><td>Birth date'
+					. '<tr><td>@BirthPlace</td><td>Birth place'
+					. '<tr><td>@DeathDate</td><td>Death date'
+					. '<tr><td>@DeathPlace</td><td>Death place'
+					. '<tr><td>@MarriageDate</td><td>Marriage date'
+					. '<tr><td>@MarriagePlace</td><td>Marriage place'
+					. '<tr><td>@Occupation</td><td>Occupation'
+							. '</table></td>';
+				
+							// 2,1 Data
 		echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate ( 
 				'Data shown' ), '</td>';
 		
