@@ -165,219 +165,52 @@ class ExportGraphmlModule extends AbstractModule implements
 		
 		// 2,1 Data
 		echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate (
-				'Individual template' ), '</td>';
+				'Template for individuals' ), '</td>';
 		
 		// 2,2 Node label
 		echo '<td class="optionbox">' .
-				'<textarea rows="5" cols="50" name="ind_label_template">'
-				. "{@GivenName&1@ }@SurName@ {(@BirthDate&%Y@-@DeathDate&%Y@)}<br>\n"
-				.	'@Occupation@'
+				'<textarea rows="5" cols="40" name="ind_label_template">'
+				. "@&<table>{@GivenName&1@ }@SurName@ {(@BirthDate&%Y@-@DeathDate&%Y@)}\n"
+				.	'{<br>@Occupation@}</table>'
 				. '</textarea></td>';
 		
 		// 2,3 Node label
 		echo '<td class="optionbox">' .
-				'<textarea rows="5" cols="50" name="ind_description_template">'
-				. "{@GivenName@ }@Name&full@ {(@BirthDate&%Y@-@DeathDate&%Y@)}<br>\n"
-				.	'@Occupation@'
+				'<textarea rows="5" cols="40" name="ind_description_template">'
+				. "@&<table>{@GivenName@ }@SurName@ {(@BirthDate&%Y@-@DeathDate&%Y@)}\n"
+				.	'{<br>@Occupation@}</table>'
 				. '</textarea></td></tr>';
 		
 		// 3,1 Data
 		echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate (
-				'Family template' ), '</td>';
+				'Template for families' ), '</td>';
 		
 		// 3,2 Node label
 		echo '<td class="optionbox">' .
-				'<textarea rows="5" cols="50" name="family_label_template">'
+				'<textarea rows="5" cols="40" name="family_label_template">'
 				. ""
 				. '</textarea></td>';
 		
 		// 3,2 Node label
 		echo '<td class="optionbox">' .
-				'<textarea rows="5" cols="50" name="family_description_template">'
-				. "oo@MarriageDate&%j.%n.%Y@\n"
-				. "{<br>@MarriagePlace&R2@)}"
+				'<textarea rows="5" cols="40" name="family_description_template">'
+				. "@&<table>{oo @MarriageDate&%j.%n.%Y@}\n"
+				. "{<br>@MarriagePlace&R2@)}</table>"
 				. '</textarea></td></tr>';
 		
 		// 4,1 Data
 		echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate (
-						'Syntax' ), '</td>';
+						'Keyword' ), '</td>';
 				
 		// 5,2 Node label
-		echo '<td class="optionbox" colspan="1">' .
-					'<table>'
-					. '<td colspan="2"> keywords</td>'
-					. '<tr><td>@GivenName</td><td>Given Name'
-					. '<tr><td>@SurName</td><td>Sur name'
-					. '<tr><td>@BirthDate</td><td>Birth date'
-					. '<tr><td>@BirthPlace</td><td>Birth place'
-					. '<tr><td>@DeathDate</td><td>Death date'
-					. '<tr><td>@DeathPlace</td><td>Death place'
-					. '<tr><td>@MarriageDate</td><td>Marriage date'
-					. '<tr><td>@MarriagePlace</td><td>Marriage place'
-					. '<tr><td>@Occupation</td><td>Occupation'
-							. '</table></td>';
+		echo '<td class="optionbox" colspan="2">' 
+					. '@GivenName, @SurName, @BirthDate, @BirthPlace, '
+					. '@DeathDate, @Occupation, @MarriageDate, @MarriagePlace'
+					. '</td>';
 				
-		// 5,2 Node label
-		echo '<td class="optionbox" colspan="1">' .
-					'<table>'
-					. '<td colspan="2"> formats</td>'
-					. '<tr><td>&</td><td>Given Name'
-					. '<tr><td>@SurName</td><td>Sur name'
-					. '<tr><td>@BirthDate</td><td>Birth date'
-					. '<tr><td>@BirthPlace</td><td>Birth place'
-					. '<tr><td>@DeathDate</td><td>Death date'
-					. '<tr><td>@DeathPlace</td><td>Death place'
-					. '<tr><td>@MarriageDate</td><td>Marriage date'
-					. '<tr><td>@MarriagePlace</td><td>Marriage place'
-					. '<tr><td>@Occupation</td><td>Occupation'
-							. '</table></td>';
-				
-							// 2,1 Data
-		echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate ( 
-				'Data shown' ), '</td>';
-		
-		// 2,2 Node label
-		echo '<td class="optionbox">' .
-				 '<select name="label_data[]" multiple="multiple" size=10>' .
-				 '<option name="test" value="name" selected>Name</option>' .
-				 '<option value="birth_date" selected>Birth date</option>' .
-				 '<option value="death_date" selected>Death date</option>' .
-				 '<option value="marriage_date">Marriage date</option>' .
-				 '<option value="birth_place" selected>Birth place</option>' .
-				 '<option value="death_place">Death place</option>' .
-				 '<option value="marriage_place">Marriage place</option>' .
-				 '<option value="occupation" selected>Occupation</option>' .
-				 '<option value="portrait" selected>Portrait</option>' .
-				 '<option value="silhouette" selected>Silhouette</option>' .
-				 '</select></td>';
-		
-		// 2,3 Node description
-		echo '<td class="optionbox">' .
-				 '<select name="description_data[]" multiple="multiple" size=8>' .
-				 '<option value="name" selected>Name</option>' .
-				 '<option value="birth_date" selected>Birth date</option>' .
-				 '<option value="death_date" selected>Death date</option>' .
-				 '<option value="marriage_date" selected>Marriage date</option>' .
-				 '<option value="birth_place" selected>Birth place</option>' .
-				 '<option value="death_place" selected>Death place</option>' .
-				 '<option value="marriage_place" selected>Marriage place</option>' .
-				 '<option value="occupation" selected>Occupation</option>' .
-				 '</select></td></tr>';
-		
-		// 3,1 Name Format
-		echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate ( 
-				'Name format' ), '</td>';
-		
-		// 3,2 Label
-		echo '<td class="optionbox">' . '<select name="label_format_name">' .
-				 '<option value="full">All given name</option>' .
-				 '<option value="1" selected>First given name</option>' .
-				 '<option value="2">First two given names</option></select></td>';
-		
-		// 3,3 Description
-		echo '<td class="optionbox">' . '<select name="description_format_name">' .
-				 '<option value="full" selected>All given name</option>' .
-				 '<option value="1">First given name</option>' .
-				 '<option value="2">First two given names</option></select></td></tr>';
-		
-		// 4,1 Date Format
-		echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate ( 
-				'Date format' ), '</td>';
-		
-		// 4,2 Label
-		echo '<td class="optionbox">' . '<select name="label_format_dates">' .
-				 '<option value="%j.%n.%Y">day.month.year</option>' .
-				 '<option value="%n/%j/%Y">month/day/year</option>' .
-				 '<option value="%Y" selected>Year only</option></select></td>';
-		
-		// 4,3 Description
-		echo '<td class="optionbox">' .
-				 '<select name="description_format_dates">' .
-				 '<option value="%j.%n.%Y" selected>day.month.year</option>' .
-				 '<option value="%n/%j/%Y">month/day/year</option>' .
-				 '<option value="%Y">Year only</option></select></td></tr>';
-		
-		// 4,1 Date Position
-		echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate ( 
-				'Birth and death date position' ), '</td>';
-		
-		// 4,2 Label
-		echo '<td class="optionbox">' . '<select name="label_position_dates">' .
-				 '<option value="after" selected>After name</option>' .
-				 '<option value="below">Below name</option></select></td>';
-		
-		// 4,3 Description
-		echo '<td class="optionbox">' .
-				 '<select name="description_position_dates">' .
-				 '<option value="after">After name</option>' .
-				 '<option value="below" selected>Below name</option></select></td>';
-				 
-		// 5,1 Place Format
-		echo '<tr><td class="descriptionbox width30 wrap" rowspan="3">', I18N::translate ( 
-				'Place format' ), '</td>';
-		
-		// 5,2 Label Places
-		echo '<td class="optionbox">' . '<select name="label_format_place">' .
-				 '<option value="full">Full hierarchy</option>' .
-				 '<option value="partial" selected>Selected levels</option></select></td>';
-		
-		// 5,3 Description Places
-		echo '<td class="optionbox">' .
-				 '<select name="description_format_place">' .
-				 '<option value="full" selected>Full hierarchy</option>' .
-				 '<option value="partial">Selected levels</option></select></td></tr>';
-		
-		// 6,2 Label Places selection
-		echo '<tr><td class="optionbox">Hierarchy levels<br>' .
-				 '<select name="label_format_place_levels[]" multiple="multiple" size=6>' .
-				 '<option value="1">Level 1</option>' .
-				 '<option value="2" selected>Level 2</option>' .
-				 '<option value="3">Level 3</option>' .
-				 '<option value="4">Level 4</option>' .
-				 '<option value="5">Level 5</option>' .
-				 '<option value="6">Level 6</option>' . '</select></td>';
-		
-		// 6,3 Label Places selection
-		echo '<td class="optionbox">Hierarchy levels<br>' .
-				 '<select name="description_format_place_levels[]" multiple="multiple" size=6>' .
-				 '<option value="1">Level 1</option>' .
-				 '<option value="2">Level 2</option>' .
-				 '<option value="3">Level 3</option>' .
-				 '<option value="4">Level 4</option>' .
-				 '<option value="5">Level 5</option>' .
-				 '<option value="6">Level 6</option>' . '</select></td></tr>';
-		
-		// 7,2 Label places count from
-		echo '<tr><td class="optionbox">' .
-				 '<select name="label_format_place_count_from">' .
-				 '<option value="right" selected>Count from right</option>' .
-				 '<option value="left">Count from left</option></select></td>';
-		
-		// 7,3 Description Places count from
-		echo '<td class="optionbox">' .
-				 '<select name="description_format_place_count_from">' .
-				 '<option value="right" selected>Count from right</option>' .
-				 '<option value="left">Count from left</option></select></td></tr>';
-		
-		// 4,1 Occupation Format
-		echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate ( 
-				'Occupation format' ), '</td>';
-		
-		// 4,2 Label
-		echo '<td class="optionbox">' . '<select name="label_format_occupation">' .
-				 '<option value="%j.%n.%Y">day.month.year</option>' .
-				 '<option value="%n/%j/%Y">month/day/year</option>' .
-				 '<option value="%Y" selected>Year only</option></select></td>';
-		
-		// 4,3 Description
-		echo '<td class="optionbox">' .
-				 '<select name="description_format_occupation">' .
-				 '<option value="%j.%n.%Y" selected>day.month.year</option>' .
-				 '<option value="%n/%j/%Y">month/day/year</option>' .
-				 '<option value="%Y">Year only</option></select></td></tr>';
 		
 		// 8:10,1 Box style
-		echo '<td class="descriptionbox width30 wrap" rowspan="4">', I18N::translate ( 
+		echo '<tr><td class="descriptionbox width30 wrap" rowspan="4">', I18N::translate ( 
 				'Box style' ), '</td>';
 		
 		// 8:2:3 male/female
@@ -452,30 +285,26 @@ class ExportGraphmlModule extends AbstractModule implements
 	 * @param string $format_name        	
 	 * @return string
 	 */
-	private function getIndName($record, $show_name, $format_name) {
-		if (!$show_name) {
+	private function getGivenName($record, $format) {
+		$tmp = $record->getAllNames ();
+		$givn = $tmp [$record->getPrimaryName ()] ['givn'];
+		//$surn = $tmp [$record->getPrimaryName ()] ['surname'];
+		$new_givn = explode ( ' ', $givn );
+		$count_givn = count ( $new_givn );
+
+		if ($count_givn == 0) {
 			$name = "";
+		} elseif ($count_givn > 1 && $format == 2) {
+			$name = $new_givn [0] . " " . $new_givn [1];
 		} else {
-			$tmp = $record->getAllNames ();
-			$givn = $tmp [$record->getPrimaryName ()] ['givn'];
-			$surn = $tmp [$record->getPrimaryName ()] ['surname'];
-			$new_givn = explode ( ' ', $givn );
-			$count_givn = count ( $new_givn );
-			
-			if ($count_givn == 0) {
-				$name = $surn;
-			} elseif ($count_givn > 1 && $format_name == 2) {
-				$name = $new_givn [0] . " " . $new_givn [1] . " " . $surn;
-			} else {
-				$name = $new_givn [0] . " " . $surn;
-			}
-			$name = str_replace ( array ('@P.N.','@N.N.' 
-			), 
-					array (
-							I18N::translateContext ( 'Unknown given name', '…' ),
-							I18N::translateContext ( 'Unknown surname', '…' ) 
-					), $name );
+			$name = $new_givn [0];
 		}
+		$name = str_replace ( array ('@P.N.','@N.N.' 
+		), 
+				array (
+						I18N::translateContext ( 'Unknown given name', '…' ),
+						I18N::translateContext ( 'Unknown surname', '…' ) 
+				), $name );
 		
 		return $name;
 	}
@@ -483,31 +312,30 @@ class ExportGraphmlModule extends AbstractModule implements
 	/**
 	 * Format a place
 	 *
-	 * @param string $place        	
-	 * @param string $show_places        	
-	 * @param string $format_places        	
-	 * @param string $format_place_level        	
-	 * @param string $format_place_count_from        	
+	 * @param string $place
+	 * @param string $format     	    	
 	 * @return string
 	 */
-	private function formatPlace($place, $show_places, $format_places, 
-			$format_place_level, $format_place_count_from) {
-		if (!$show_places || !$place) {
-			$place_ret = "";
-		} else {
-			$place_ret = " ";
-			$place = strip_tags ( $place );
-			if ($format_places == "full") {
-				$place_ret .= $place;
-			} else {
-				$exp_place = explode ( ',', $place );
-				$count_place = count ( $exp_place );
-				foreach ($format_place_level as $i) {
-					if ($i <= $count_place) {		
-						if ($format_place_count_from == "right") {
-							$place_ret .= $exp_place [$i - 1];
-						} else {
-							$place_ret .= $exp_place [$count_place - $i];
+	private function formatPlace($place, $format) {
+		$place_ret = "";
+		if ($place) {
+			$place = $place->getGedcomName();
+			if ($place) {
+				//$place = strip_tags ( $place );
+				if (!$format) {
+					$place_ret .= $place;
+				} else {
+					$format_place_count_from = $format{0};
+					$format_place_level = explode(",",substr($format,1));
+					$exp_place = explode ( ',', $place );
+					$count_place = count ( $exp_place );
+					foreach ($format_place_level as $i) {
+						if ($i <= $count_place) {		
+							if ($format_place_count_from == "r") {
+								$place_ret .= $exp_place [$i - 1];
+							} else {
+								$place_ret .= $exp_place [$count_place - $i];
+							}
 						}
 					}
 				}
@@ -519,21 +347,16 @@ class ExportGraphmlModule extends AbstractModule implements
 	/**
 	 * Format a date
 	 *
-	 * @param Date $date        	
-	 * @param string $show_dates        	
-	 * @param string $format_dates      	
+	 * @param Date $date        	    	
+	 * @param string $format  	
 	 * @return string
 	 */
-	private function formatDate($date, $show_date, $format_dates) {
-		if (!$show_date) {
-			$date_label = "";
+	private function formatDate($date, $format) {
+		if ($date instanceof Date) {
+			$date_label = strip_tags ( 
+					$date->display ( false, $format ) );
 		} else {
-			if ($date instanceof Date) {
-				$date_label = strip_tags ( 
-						$date->display ( false, $format_dates ) );
-			} else {
-				$date_label = "";
-			}
+			$date_label = "";
 		}
 		return $date_label;
 	}
@@ -564,40 +387,35 @@ class ExportGraphmlModule extends AbstractModule implements
 	/**
 	 * Get occupation
 	 *
-	 * @param Individual $record        	
-	 * @param string $get_occupation        	    	
-	 * @param string $format_occupation        	    	
+	 * @param Individual $record        	  	
+	 * @param string $format        	    	
 	 * @return string
 	 */
-	private function getOccupation($record, $show_occupation, $format_occupation) {
+	private function getOccupation($record, $format) {
 		// get occupation
 		$occupation = "";
-		if ($show_occupation) {
-			$OCCUs = $record->getFacts ( "OCCU" );
-			$date = null;
-			foreach ( $OCCUs as $OCCU ) {
-				$OCCU_date = $OCCU->getDate ();
-				if (! $occupation) {
+		$OCCUs = $record->getFacts ( "OCCU" );
+		$date = null;
+		foreach ( $OCCUs as $OCCU ) {
+			$OCCU_date = $OCCU->getDate ();
+			if (! $occupation) {
+				$occupation = $OCCU->getValue ();
+				if ($OCCU_date->isOK ())
+					$date = $OCCU_date;
+			} elseif ($OCCU_date->isOK ()) {
+				if ($date) {
+					// if (Date::compare($date->maximumDate(),$OCCU_date->maximumDate()) > 0) {
+					if ($date->maximumDate ()->maxJD <
+							$OCCU_date->maximumDate ()->maxJD) {
+								$date = $OCCU_date;
+								$occupation = $OCCU->getValue ();
+							}
+				} else {
+					$date = $OCCU_date;
 					$occupation = $OCCU->getValue ();
-					if ($OCCU_date->isOK ())
-						$date = $OCCU_date;
-				} elseif ($OCCU_date->isOK ()) {
-					if ($date) {
-						// if (Date::compare($date->maximumDate(),$OCCU_date->maximumDate()) > 0) {
-						if ($date->maximumDate ()->maxJD <
-								$OCCU_date->maximumDate ()->maxJD) {
-									$date = $OCCU_date;
-									$occupation = $OCCU->getValue ();
-								}
-					} else {
-						$date = $OCCU_date;
-						$occupation = $OCCU->getValue ();
-					}
 				}
 			}
 		}
-
-		if ($occupation != "") $occupation = '<br>' . $occupation;
 		
 		return $occupation;
 	}
@@ -627,11 +445,97 @@ class ExportGraphmlModule extends AbstractModule implements
 	/**
 	 * Return the footer for the graphml file
 	 *
-	 * @return String
+	 * #@return String
 	 */
 	private function graphmlFooter() {
 		return '<data key="d0"> <y:Resources/> </data>' . "\n" .
 				 '</graph> </graphml>';
+	}
+	
+	/**
+	 * Split tempalte into components
+	 *
+	 * @param String $template 
+	 * @return Array
+	 */
+	private function splitTemplate($template) {
+
+		if (strlen($template) > 2 ) {
+			$tag = $template{0};
+			$format = $template{1};
+
+			// remove line breaks
+			$template = trim(preg_replace('/\s+/', ' ', $template));
+			
+			// start with <html>
+			$template_array = array(array("component" => '<html>',
+					"type" => 'string',
+					"format" => ''));
+			
+	
+			$i = 1;
+			$pos_end = 1;
+			$pos = 0;
+			
+			// now handle all tags
+			while ($pos !== false) {
+				$pos = strpos($template, $tag, $pos_end + 1);
+				if ($pos === false) {
+					// check for a terminating string
+					if ($pos_end + 1 < strlen($template)) {
+						$template_array[$i] = array(
+							"component" => substr($template,$pos_end + 1),
+							"type" => "string",
+							"format" => "");
+						$i++;
+					}
+				} else {
+					
+					if ($pos > $pos_end + 1) {
+						// add a string
+						$template_array[$i] = array(
+							"component" => substr($template,$pos_end + 1,$pos - $pos_end - 1),
+							"type" => "string",
+							"format" => "");
+						$i++;
+					}
+					
+					// search for the end of the tag
+					$pos_end = strpos($template, $tag, $pos + 1);
+					
+					if ($pos_end !== false) {
+						$pos_format = strpos($template, $format, $pos);
+							
+						if ($pos_format < $pos_end &&  $pos_format !== false) {
+							$template_array[$i] = array(
+									"component" => substr($template,$pos + 1,$pos_format - $pos - 1),
+									"type" => "tag",
+									"format" => substr($template,$pos_format + 1,$pos_end - $pos_format - 1));
+							$i++;
+						} else {
+							$template_array[$i] = array(
+									"component" => substr($template,$pos + 1,$pos_end - $pos - 1),
+									"type" => "tag",
+									"format" => "");
+							$i++;
+					
+						}
+					}
+						
+				}
+
+
+
+			}
+						
+			// end with </html>
+			$template_array[($i+1)] = array("component" => '</html>',
+					"type" => 'string',
+					"format" => '');
+		} else {
+			$template_array = null;
+		}
+		return $template_array;
 	}
 	
 	/**
@@ -649,20 +553,13 @@ class ExportGraphmlModule extends AbstractModule implements
 		
 		// get parameter entered in the form defined in set_parameter()
 		$parameter = $_GET;
+
 		
-		foreach(array("label", "description") as $a) {
-			if (array_key_exists($a . "_data", $parameter)) {
-				$data[$a] = $parameter[$a . "_data"];
-			} else {
-				$data[$a] = array();
-			}
-			if (array_key_exists($a . "_format_place_levels", $parameter)) {
-				$format_place_levels[$a] = $parameter[$a . "_format_place_levels"];
-			} else {
-				$format_place_levels[$a] = array();
-			}
-		}
-		
+
+		// Split templates
+		$template["label"] = $this->splitTemplate($parameter["ind_label_template"]);		
+		$template["description"] = $this->splitTemplate($parameter["ind_description_template"]);
+				
 		// Get header.
 		// Buffer the output. Lots of small fwrite() calls can be very slow when writing large files.
 		$buffer = $this->graphmlHeader ();
@@ -696,62 +593,81 @@ class ExportGraphmlModule extends AbstractModule implements
 				$node_style = $parameter ['node_style_male'];
 				$col_border = $parameter ['border_male'];
 			}
-			
-			
-			
-			foreach(array("label", "description") as $a) {
-							
-				$nodetext[$a] = '<html><table>';
-					
-				// portrait
-				$nodetext[$a] .= $this->getPortrait($record, in_array("portrait", $data[$a]), $parameter ['image_directory']);
-				// name
-				$nodetext[$a] .= $this->getIndName($record, in_array("name", $data[$a]), $parameter[$a . "_format_name"]);
-					
-				// birth date and place
-				$date_birth = $this->formatDate($record->getBirthDate (),
-						in_array("birth_date", $data[$a]), $parameter[$a . "_format_dates"], '*');
 
-				$place_birth = $this->formatPlace($record->getBirthPlace (),
-						in_array("birth_place", $data[$a]),
-						$parameter[$a . "_format_place"],
-						$format_place_levels[$a],
-						$parameter[$a . "_format_place_count_from"]);
-			
-				// death date and place
-				$date_death = $this->formatDate($record->getDeathDate (),
-						in_array("death_date", $data[$a]), $parameter[$a . "_format_dates"], '+');
-				$place_death = $this->formatPlace($record->getDeathPlace (),
-						in_array("death_place", $data[$a]),
-						$parameter[$a . "_format_place"],
-						$format_place_levels[$a],
-						$parameter[$a . "_format_place_count_from"]);
+			foreach(array("label", "description") as $a) {
+
+				// Fill template in three steps
+				// Replace all tags @..$..@
+				// Check for brackets {...} without replacement and remove these
 				
-				if ($parameter[$a . "_position_dates"] == "after") {
-					if ($date_birth . $date_death != "") {
-						$nodetext[$a] .= " (" . $date_birth . "-" . $date_death . ")";
-					}
-					if ($place_birth) $nodetext[$a] .= "<br>* " . $place_birth;
-					if ($place_death) $nodetext[$a] .= "<br>+ " . $place_death;					
-				} else {
-					if ($date_birth . $place_birth != "") {
-						$nodetext[$a] .= "<br>* " . $date_birth . $place_birth;
-					}
-					if ($date_death . $place_death != "") {
-						$nodetext[$a] .= "<br>+ " . $date_death . $place_death;
+				// replace  @..$..@
+				
+				// loop over template array
+				$nodetext[$a] = "";
+				$new_string = "";
+				if ($template[$a]) {
+					foreach ($template[$a] as $comp) {
+						if ($comp["type"] == "string") {
+							$new_string .= $comp["component"];
+						} else {
+							$tag_replacement = "";
+							$format =  $comp["format"];
+							switch ($comp["component"]) {
+								case "GivenName":
+									$tag_replacement .= $this->getGivenName($record, $format);
+									break;
+								case "SurName":
+									$tag_replacement .= $record->getAllNames () [$record->getPrimaryName ()] ['surname'];
+									break;
+								case "BirthDate":
+									$tag_replacement .= $this->formatDate($record->getBirthDate (), $format);
+									break;
+								case "BirthPlace":
+									$tag_replacement .= $this->formatPlace($record->getBirthPlace (), $format);
+									break;
+								case "DeathDate":
+									$tag_replacement .= $this->formatDate($record->getDeathDate (), $format);
+									break;
+								case "DeathPlace":
+									$tag_replacement .= $this->formatPlace($record->getDeathPlace (), $format);
+									break;
+								case "MarriageDate":
+									$tag_replacement .= $this->formatDate($record->getMarriageDate (), $format);
+									break;
+								case "MarriagePlace":
+									$tag_replacement .= $this->formatPlace($record->getMarriagePlace (), $format);
+									break;
+								case "Occupation":
+									$tag_replacement .= $this->getOccupation($record, $format);
+									break;
+												
+							}
+							if ($tag_replacement != "") {
+								// check for a {...} in $new_string and remove it
+								$new_string = preg_replace("/{.*}/", "", $new_string);
+								$nodetext[$a] .= $new_string . $tag_replacement;
+								$new_string = "";
+							}
+						}
 					}
 				}
 				
+				$new_string = preg_replace("/{.*}/", "", $new_string);
+				$nodetext[$a] .= $new_string;
+				$nodetext[$a] = preg_replace(array("/{/","/}/"), array("",""), $nodetext[$a]);
 				
-				// occupancy
-				$nodetext[$a] .= $this->getOccupation($record, in_array("occupation", $data[$a]), $parameter[$a . "_format_occupation"]);
-					
-				$nodetext[$a] .= '</table></html>';
+				// portrait
+				//$nodetext[$a] .= $this->getPortrait($record, in_array("portrait", $data[$a]), $parameter ['image_directory']);
+				// name
+				//$nodetext[$a] .= $this->getIndName($record, in_array("name", $data[$a]), $parameter[$a . "_format_name"]);
 				
 			}
+				
+			// this replacement has to be done for "lable"
+			// for "description" no replacement must be done
 			$nodetext["label"] = str_replace ( "<", "&lt;", $nodetext["label"] );
 			$nodetext["label"] = str_replace ( ">", "&gt;", $nodetext["label"] );
-				
+			
 			$label_rows = count ( explode ( "&lt;br&gt;", $nodetext["label"] ) ) + 1;
 			// create node
 			$buffer .= '<node id="' . $row->xref . '">' . "\n" 
@@ -783,6 +699,9 @@ class ExportGraphmlModule extends AbstractModule implements
 		/*
 		 * Create nodes for families
 		 */
+		// Split templates
+		$template["label"] = $this->splitTemplate($parameter["family_label_template"]);		
+		$template["description"] = $this->splitTemplate($parameter["family_description_template"]);
 		// Get all families
 		$rows = Database::prepare ( 
 				"SELECT f_id AS xref, f_gedcom AS gedcom" .
@@ -794,22 +713,45 @@ class ExportGraphmlModule extends AbstractModule implements
 		foreach ( $rows as $row ) {
 			$record = Family::getInstance ( $row->xref, $tree );
 			
-			// marriage date
 			foreach(array("label", "description") as $a) {
-				if ($record->getMarriage()) {				
-					$nodetext[$a] = $this->formatDate($record->getMarriageDate (),
-					 		in_array("marriage_date", $data[$a]), $parameter["label_format_dates"], 'oo');
 					
-					$b = $record->getMarriagePlace ()->getFullName() ;
-					
-					$nodetext[$a] .= $this->formatPlace($record->getMarriagePlace ()->getFullName() ,
-					 		in_array("marriage_place", $data[$a]),
-					 		$parameter["label_format_place"],
-					 		$format_place_levels[$a],
-					 		$parameter["label_format_place_count_from"]);
-				} else {
-					$nodetext[$a] = "";
+				$nodetext[$a] = "";
+				$new_string = "";
+				if ($template[$a]) {
+					foreach ($template[$a] as $comp) {
+						if ($comp["type"] == "string") {
+							$new_string .= $comp["component"];
+						} else {
+							$tag_replacement = "";
+							$format =  $comp["format"];
+							switch ($comp["component"]) {
+								case "MarriageDate":
+									$tag_replacement .= $this->formatDate($record->getMarriageDate (), $format);
+									break;
+								case "MarriagePlace":
+									// does not work because no exception handling included
+									// $tag_replacement .= $this->formatPlace($record->getMarriagePlace(), $format);
+									$marriage = $record->getMarriage();
+									if ($marriage) {
+										$tag_replacement .= $this->formatPlace($marriage->getPlace(), $format);
+									};
+									break;										
+							}
+							if ($tag_replacement != "") {
+								// check for a {...} in $new_string and remove it
+								$new_string = preg_replace("/{.*}/", "", $new_string);
+								$nodetext[$a] .= $new_string . $tag_replacement;
+								$new_string = "";
+							}
+						}
+					}
 				}
+				$new_string = preg_replace("/{.*}/", "", $new_string);
+				$nodetext[$a] .= $new_string;
+				$nodetext[$a] = preg_replace(array("/{/","/}/"), array("",""), $nodetext[$a]);
+				
+				//$nodetext[$a] = str_replace ( "<", "&lt;", $nodetext[$a] );
+				//$nodetext[$a] = str_replace ( ">", "&gt;", $nodetext[$a] );
 			}
 			
 			$buffer .= '<node id="' . $row->xref . '">' . "\n";
