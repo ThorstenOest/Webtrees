@@ -155,58 +155,66 @@ class ExportGraphmlModule extends AbstractModule implements
 		<tr><td class="topbottombar" colspan="7">', I18N::translate ( 
 				'Export tree in graphml format' ), '</td></tr>';
 		
-		// Node / description header
-		echo '<td class="descriptionbox width30 wrap">', '</td>';
-		echo '<td class="descriptionbox width30 wrap" colspan="2">', I18N::translate ( 
-				'Node label' ), '</td>';
-		echo '<td class="descriptionbox width30 wrap" colspan="2">', I18N::translate ( 
-				'Node description' ), '</td>';
+		// Individual node / description 
+		echo '<tr><td class="descriptionbox width30 wrap" colspan="5">', I18N::translate ( 
+				'Template for individuals' ), '</td></tr>';
 		
-		// Node templates
-		echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate ( 
-				'Template for individuals' ), '</td>';
-		echo '<td class="optionbox" colspan="2">' .
-				 '<textarea rows="5" cols="40" name="ind_label_template">' .
+		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate ('Node label' ), '</td>';
+		echo '<td class="optionbox" colspan="4">' .
+				 '<textarea rows="7" cols="100" name="ind_label_template">' .
 				 '@&' . 
-				 '<table width="200">' .
+				 '<table>' . "\n" .
 				 '{<td><img src="file:C:/xampp/htdocs/webtrees/data/media/thumbs/@Portrait&fallback@' .
 						 '" alt="kein Bild" width="20" height="30"></td>}' . "\n" .
-				 '<td><table><br><big>{@GivenName&1,2,3.@ }@SurName@</big><small> {*@BirthDate&%Y@}{ +@DeathDate&%Y@}</small></br>' . "\n" .
-				 '{<br><small>@FactOCCU&-1@</small></br>}</table></td></table>' . '</textarea></td>';
-		echo '<td class="optionbox" colspan="2">' .
-				 '<textarea rows="5" cols="40" name="ind_description_template">' .
-				 '@&' .
-				 '<table><br>{@GivenName&1,2,3,.@ }@SurName@</br>' . "\n" . 
+				 '<td><table width="200">' . "\n" .
+				 '<br>{@GivenName&1,2,.@ }@SurName@' . "\n" .
+				 '<span style="font-size:80%">{<br>*@BirthDate&%Y@ @BirthPlace&1,-1/Deutschland@</br>}' . "\n" .
+				 '{<br>&#134;@DeathDate&%Y@ @DeathPlace&1,-1/Deutschland@</br>}' . "\n" .
+				 '{<br>@FactOCCU&-1@</br>}</span>' . "\n" .
+		'</table></td></table>' . '</textarea></td></tr>';
+		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate ('Node description' ), '</td>';
+		echo '<td class="optionbox" colspan="4">' .
+				 '<textarea rows="6" cols="100" name="ind_description_template">' .
+				 '@&<table>' . "\n" .
+				 '<br>{@GivenName&1,2,3,.@ }@SurName@</br>' . "\n" . 
 				 '{<br>{*@BirthDate&%j.%n.%Y@}{ @BirthPlace&1,-1@}</br>}' . "\n" .
-				 '{<br>+@DeathDate&%j.%n.%Y@}{ @DeathPlace&1,-1@}</br>}' . "\n" .
-				 '{<br>@FactOCCU@</br>}</table>' . '</textarea></td></tr>';
+				 '{<br>&#134;@DeathDate&%j.%n.%Y@}{ @DeathPlace&1,-1@}</br>}' . "\n" .
+				 '{<br>@FactOCCU@</br>}' . "\n" . '</table>' . "\n" .
+				 '@Gedcom@' . '</textarea></td></tr>';
 		
-		// Family templates
-		echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate ( 
-				'Template for families' ), '</td>';
-		echo '<td class="optionbox" colspan="2">' .
-				 '<textarea rows="5" cols="40" name="family_label_template">' .
-				 "@&@Marriage&oo@{ <small>@MarriageDate&%Y@</small>}" .
-				 '</textarea></td>';
-		echo '<td class="optionbox" colspan="2">' .
-				 '<textarea rows="5" cols="40" name="family_description_template">' .
-				 "@&<table>{<br>@Marriage&oo@ @MarriageDate&%j.%n.%Y@</br>}\n" .
-				 "{<br>@MarriagePlace&-2,1@)</br>}</table>" .
+		// Family node / description 
+		echo '<tr><td class="descriptionbox width30 wrap" colspan="5">', I18N::translate ( 
+				'Template for families' ), '</td></tr>';
+
+		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate ('Node label' ), '</td>';
+		echo '<td class="optionbox" colspan="4">' .
+				 '<textarea rows="3" cols="100" name="family_label_template">' .
+				 '@&' . "\n" . '{<div style="font-size:90%">@Marriage&oo@ @MarriageDate&%Y@</div>}' .
+				 '</textarea></td></tr>';
+		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate ('Node description' ), '</td>';
+		echo '<td class="optionbox" colspan="4">' .
+				 '<textarea rows="4" cols="100" name="family_description_template">' .
+				 '@&<table>' . "\n" .
+				 "{<br>@Marriage&oo@ @MarriageDate&%j.%n.%Y@</br>}\n" .
+				 "{<br>@MarriagePlace&-2,1@)</br>}" . "\n"  . "</table>" . "\n" .
+				 '@Gedcom@' .
 				 '</textarea></td></tr>';
 		
 		// keyword description
 		echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate ( 
 				'Keyword' ), '</td>';
 		echo '<td class="optionbox" colspan="4">' .
-				 'The first two characters define the identifier for a tag and the format, eg. @$.' .
+				 'The first two characters define the identifier for a tag and the format, e.g. @&.' .
 				 '<table border="1">' .
-				 '<tr><th>tag</th><th>format</th><th>example for identifier @$</th></tr>' .
-				 '<tr><td>GivenName</td><td>list of given names, "." for abreviation</td><td>@GivenName$1,2,3.@</td></tr>' .
+				 '<tr><th>tag</th><th>format</th><th>example for identifier @&</th></tr>' .
+				 '<tr><td>GivenName</td><td>list of given names, "." for abreviation</td><td>@GivenName&1,2,3.@</td></tr>' .
 				 '<tr><td>SurName</td><td>-</td><td>@SurName@</td></tr>' .
-				 '<tr><td>BirthDate, DeathDate, MarriageDate</td><td> PHP date format specification</td><td>@DeathDate$%j.%n.%Y@</td></tr>' .
-				 '<tr><td>BirthPlace, DeathPlace, MarriagePlace</td><td>"r" or "l" followed by the positions</td><td>@DeathPlace$r2,3@</td></tr>' .
-				 '<tr><td>Marriage<td>any string</td><td>@Marriage$oo@</td></tr>' .
-				 '<tr><td>FactXXXX<td>position in the ordered fact list</td><td>@FactOCCU$1,2,-1@</td></tr>' .
+				 '<tr><td>BirthDate, DeathDate, MarriageDate</td><td> PHP date format specification</td><td>@DeathDate&%j.%n.%Y@</td></tr>' .
+				 '<tr><td>BirthPlace, DeathPlace, MarriagePlace</td><td>list of positions, exclusion followed after / </td><td>@DeathPlace&2,3/USA@</td></tr>' .
+				 '<tr><td>Marriage<td>any string</td><td>@Marriage&oo@</td></tr>' .
+				 '<tr><td>FactXXXX<td>position in the ordered fact list</td><td>@FactOCCU&1,2,-1@</td></tr>' .
+				 '<tr><td>Portrait<td>"fallback" or "silhouette"</td><td>@Portrai&fallback@</td></tr>' .
+				 '<tr><td>Gedcom<td>-</td><td>@Gedcom@</td></tr>' .
 				 '</table></td>';
 		
 		// Box style header
@@ -225,8 +233,8 @@ class ExportGraphmlModule extends AbstractModule implements
 		echo '<tr>';
 		foreach(array("male", "female", "unknown") as $s) {
 			echo '<td class="optionbox"  colspan="1">' . 
-					 '<select name="node_style_' . $s .'" value="BevelNode2">' .
-					 '<option value="BevelNode2">BevelNode2</option>' .
+					 '<select name="node_style_' . $s .'">' .
+					 '<option value="BevelNode2" selected>BevelNode2</option>' .
 					 '<option value="Rectangle">Rectangle</option>' .
 					 '<option value="RoundRect">RoundRect</option>' .
 					 '<option value="BevelNode">BevelNode</option>' .
@@ -240,15 +248,25 @@ class ExportGraphmlModule extends AbstractModule implements
 		}
 		
 		echo '<td class="optionbox"  colspan="1">' .
-				 '<select name="node_style_family" value="BevelNode2">' .
-				 '<option value="rectangle">rectangle</option>' .
+				 '<select name="node_style_family">' .
+				 '<option value="rectangle">Rectangle</option>' .
+				 '<option value="roundrectangle">Round Rectangle</option>' .
+				 '<option value="ellipse">Ellipse</option>' .
+				 '<option value="parallelogram">Parallelogram</option>' .
+				 '<option value="hexagon">Hexagon</option>' .
+				 '<option value="triangle">Triangle</option>' .
+				 '<option value="rectangle3d">Rectangle 3D</option>' .
+				 '<option value="octagon3d">Octagon</option>' .
+				 '<option value="diamond" selected>Diamond</option>' .
+				 '<option value="trapezoid">Trapezoid</option>' .
+				 '<option value="trapezoid2">Trapezoid2</option>' .
 				 '</select></td></tr>';
 		
 		// Fill color
 			echo '<tr><td class="optionbox" colspan="1">Fill color 
-					<input type="color" value="#d9ffff" name="color_male"></td>';
+					<input type="color" value="#ccccff" name="color_male"></td>';
 			echo '<td class="optionbox" colspan="1">Fill color 
-					<input type="color" value="#ffd7ff" name="color_female"></td>';
+					<input type="color" value="#ffcccc" name="color_female"></td>';
 			echo '<td class="optionbox" colspan="1">Fill color 
 					<input type="color" value="#ffffff" name="color_unknown"></td>';
 			echo '<td class="optionbox" colspan="1">Fill color
@@ -266,10 +284,10 @@ class ExportGraphmlModule extends AbstractModule implements
 		echo '<tr>';
 		foreach(array("male", "female", "unknown") as $s) {
 			echo '<td class="optionbox" colspan="1">Box width
-					<input type="number" value="200" name="box_width_' . $s . '"></td>';
+					<input type="number" value="250" name="box_width_' . $s . '"></td>';
 		}
-		echo '<td class="optionbox" colspan="1">Box width
-				<input type="number" value="50" name="box_width_family"></td></tr>';
+		echo '<td class="optionbox" colspan="1">Symbol width/height
+				<input type="number" value="15" name="box_width_family"></td></tr>';
 		
 		// Default figure
 		echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate ( 
@@ -281,10 +299,21 @@ class ExportGraphmlModule extends AbstractModule implements
 		
 		echo '<td class="optionbox" colspan="1"/></tr>';
 		
+		// Font
+		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate ( 
+				'Font' ), '</td><td class="optionbox" colspan="4">' .
+				 '<select name="font">' .
+				 '<option value="Times New Roman" selected>Times New Roman</option>' .
+				 '<option value="Dialog">Dialog</option>' .
+				 '<option value="Franklin Gothic Book">Franklin Gothic Book</option>' .
+				 '<option value="Bookman Old Style">Bookman Old Style</option>' .
+				 '<option value="Lucida Handwriting">Lucida Handwriting</option>' .
+				 '</select></td></tr>';
+						
 		// Edge line width
 		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate ( 
 				'Line width of edge' ), '</td><td class="optionbox" colspan="4">
-			<input type="number" value="2" name="edge_line_width" min="1" max="7"></td></tr>';
+			<input type="number" value="1.5" step="0.1" name="edge_line_width" min="1" max="7"></td></tr>';
 				
 		// Submit button
 		echo '<tr><td class="topbottombar" colspan="6">', '<button>', I18N::translate ( 
@@ -349,14 +378,18 @@ class ExportGraphmlModule extends AbstractModule implements
 				$exp_place = explode ( ',', $place );
 				$count_place = count ( $exp_place );
 				foreach ( $format_place_level as $s ) {
-					$i = (int) $s;
+					$sarray =  explode ( "/", $s );
+					$i = (int) $sarray[0];
 					if (abs($i) <= $count_place && $i != 0) {
-						if ($place_ret != "") $place_ret .= ", ";
 						if ($i > 0) {
-							$place_ret .= trim($exp_place [$i - 1]);
+							$sp = trim($exp_place [$i - 1]);
 						} else {
-							$place_ret .= trim($exp_place [$count_place + $i]);
+							$sp = trim($exp_place [$count_place + $i]);
 						}
+						if (in_array($sp, $sarray)) $sp ="";
+						
+						if ($place_ret != "" & $sp != "") $place_ret .= ", ";
+						$place_ret .= $sp;
 					}
 				}
 			}
@@ -713,8 +746,15 @@ class ExportGraphmlModule extends AbstractModule implements
 											$record, $comp ["fact"], $format );
 									break;
 								case "Portrait" :
-									$tag_replacement .= $this->getPortrait($record);
-									If ($format == "fallback" && $tag_replacement == "") $tag_replacement = $portrait_fallback;
+									if ($format == "silhouette") {
+										$tag_replacement = $portrait_fallback;
+									} else {
+										$tag_replacement .= $this->getPortrait($record);
+										If ($format == "fallback" && $tag_replacement == "") $tag_replacement = $portrait_fallback;
+									}
+									break;
+								case "Gedcom" :
+									$tag_replacement = preg_replace ( "/\\n/", "<br>", $record->getGedcom() );
 									break;
 							}
 							if ($tag_replacement != "") {
@@ -733,7 +773,7 @@ class ExportGraphmlModule extends AbstractModule implements
 				$nodetext [$a] = preg_replace ( array ("/{/","/}/" 
 				), array ("","" 
 				), $nodetext [$a] );
-				$nodetext [$a] = preg_replace ( "/<html><\/html>/", "", $nodetext [$a] );
+				$nodetext [$a] = preg_replace ( "/<html>\s*<\/html>/", "", $nodetext [$a] );
 				
 				// portrait
 				// $nodetext[$a] .= $this->getPortrait($record, in_array("portrait", $data[$a]), $parameter ['image_directory']);
@@ -761,7 +801,7 @@ class ExportGraphmlModule extends AbstractModule implements
 					 '" width="' . $box_width . '" x="10" y="10"/> <y:Fill color="' . $col .
 					 '" transparent="false"/> <y:BorderStyle color="' .
 					 $col_border .
-					 '" type="line" width="1.0"/> <y:NodeLabel alignment="center" autoSizePolicy="content" hasBackgroundColor="false" hasLineColor="false" textColor="#000000" fontFamily="Dialog" fontSize="12" fontStyle="plain" visible="true" modelName="internal" modelPosition="l" width="129" height="19" x="1" y="1">';
+					 '" type="line" width="1.0"/> <y:NodeLabel alignment="center" autoSizePolicy="content" hasBackgroundColor="false" hasLineColor="false" textColor="#000000" fontFamily="' . $parameter ['font'] . '" fontSize="12" fontStyle="plain" visible="true" modelName="internal" modelPosition="l" width="129" height="19" x="1" y="1">';
 			
 			// no line break befor $nodetext allowed
 			$buffer .= $nodetext ["label"] . "\n" .
@@ -826,6 +866,9 @@ class ExportGraphmlModule extends AbstractModule implements
 												$marriage->getPlace (), $format );
 									}
 									break;
+								case "Gedcom" :
+									$tag_replacement = preg_replace ( "/\\n/", "<br>", $record->getGedcom() );
+									break;
 							}
 							if ($tag_replacement != "") {
 								// check for a {...} in $new_string and remove it
@@ -842,7 +885,7 @@ class ExportGraphmlModule extends AbstractModule implements
 				$nodetext [$a] = preg_replace ( array ("/{/","/}/" 
 				), array ("","" 
 				), $nodetext [$a] );
-				$nodetext [$a] = preg_replace ( "/<html><\/html>/", "", $nodetext [$a] );
+				$nodetext [$a] = preg_replace ( "/<html>\s*<\/html>/", "", $nodetext [$a] );
 				
 				// $nodetext[$a] = str_replace ( "<", "&lt;", $nodetext[$a] );
 				// $nodetext[$a] = str_replace ( ">", "&gt;", $nodetext[$a] );
@@ -866,22 +909,24 @@ class ExportGraphmlModule extends AbstractModule implements
 			$buffer .= '<data key="d2"><![CDATA[' . $nodetext ["description"] .
 					 ']]></data>' . "\n";
 			
+			
+			if ($nodetext ["label"] == "") {
+				$visible = "false";
+			} else {
+				$visible = "true";
+			}
+					
 			$buffer .= '<data key="d3"> <y:ShapeNode>' .
 					 '<y:Geometry height="'. 
-					 //(6 + 15 * $label_rows) . '" width="' .
-					 //$box_width . '" x="28" y="28"/>' . 
-					 1 . '" width="' .
-					 1 . '" x="28" y="28"/>' . 
+					 $box_width . '" width="' .
+					 $box_width . '" x="28" y="28"/>' . 
 					 '<y:Fill color="#000000" color2="#000000" transparent="false"/>' .
-					 //'<y:Fill color="' . $col . '" color2="#000000" transparent="false"/>' .
 					 '<y:BorderStyle hasColor="false" type="line" width="1.0"/>' .
 					 '<y:NodeLabel alignment="center" autoSizePolicy="content" ' .
 					 'backgroundColor="' . $col . '" hasLineColor="true" ' . 'lineColor="' . $col_border . '" ' .
-					 //'backgroundColor="#ffffff" hasLineColor="false" ' .
-					 'textColor="#000000" fontFamily="Dialog" fontSize="12" ' .
-					 'fontStyle="plain" visible="true" modelName="internal" modelPosition="c" ' .
-					 //'width="77" height="34" x="10" y="10">';
-					 'width="' . $box_width. '" height="' . (12 * $label_rows) . '" x="10" y="10">';
+					 'textColor="#000000" fontFamily="' . $parameter ['font'] . '" fontSize="12" ' .
+					 'fontStyle="plain" visible="' . $visible . '" modelName="internal" modelPosition="c" ' .
+					 'width="' . $box_width . '" height="' . (12 * $label_rows) . '" x="10" y="10">';
 					
 					 
 			$buffer .= $nodetext ["label"];
