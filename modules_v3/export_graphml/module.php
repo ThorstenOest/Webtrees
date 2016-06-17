@@ -145,6 +145,8 @@ class ExportGraphmlModule extends AbstractModule implements
 		$controller = new PageController ();
 		$controller->setPageTitle ( $this->getTitle () )->pageHeader ();
 		
+		$directory = WT_MODULES_DIR . $this->getName();
+		
 		// header
 		echo '<div id="reportengine-page">
 		<form name="setupreport" method="get" action="module.php">
@@ -156,49 +158,24 @@ class ExportGraphmlModule extends AbstractModule implements
 				'Export tree in graphml format' ), '</td></tr>';
 		
 		// Individual node / description 
-		echo '<tr><td class="descriptionbox width30 wrap" colspan="5">', I18N::translate ( 
-				'Template for individuals' ), '</td></tr>';
-		
-		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate ('Node label' ), '</td>';
-		echo '<td class="optionbox" colspan="4">' .
-				 '<textarea rows="7" cols="100" name="ind_label_template">' .
-				 '@&' . 
-				 '<table>' . "\n" .
-				 '{<td><img src="file:C:/xampp/htdocs/webtrees/data/media/thumbs/@Portrait&fallback@' .
-						 '" alt="kein Bild" width="20" height="30"></td>}' . "\n" .
-				 '<td><table width="200">' . "\n" .
-				 '<br>{@GivenName&1,2,.@ }@SurName@' . "\n" .
-				 '<span style="font-size:80%">{<br>*@BirthDate&%Y@ @BirthPlace&1,-1/Deutschland@</br>}' . "\n" .
-				 '{<br>&#134;@DeathDate&%Y@ @DeathPlace&1,-1/Deutschland@</br>}' . "\n" .
-				 '{<br>@FactOCCU&-1@</br>}</span>' . "\n" .
-		'</table></td></table>' . '</textarea></td></tr>';
-		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate ('Node description' ), '</td>';
-		echo '<td class="optionbox" colspan="4">' .
-				 '<textarea rows="6" cols="100" name="ind_description_template">' .
-				 '@&<table>' . "\n" .
-				 '<br>{@GivenName&1,2,3,.@ }@SurName@</br>' . "\n" . 
-				 '{<br>{*@BirthDate&%j.%n.%Y@}{ @BirthPlace&1,-1@}</br>}' . "\n" .
-				 '{<br>&#134;@DeathDate&%j.%n.%Y@}{ @DeathPlace&1,-1@}</br>}' . "\n" .
-				 '{<br>@FactOCCU@</br>}' . "\n" . '</table>' . "\n" .
-				 '@Gedcom@' . '</textarea></td></tr>';
-		
-		// Family node / description 
-		echo '<tr><td class="descriptionbox width30 wrap" colspan="5">', I18N::translate ( 
-				'Template for families' ), '</td></tr>';
-
-		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate ('Node label' ), '</td>';
-		echo '<td class="optionbox" colspan="4">' .
-				 '<textarea rows="3" cols="100" name="family_label_template">' .
-				 '@&' . "\n" . '{<div style="font-size:90%">@Marriage&oo@ @MarriageDate&%Y@</div>}' .
-				 '</textarea></td></tr>';
-		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate ('Node description' ), '</td>';
-		echo '<td class="optionbox" colspan="4">' .
-				 '<textarea rows="4" cols="100" name="family_description_template">' .
-				 '@&<table>' . "\n" .
-				 "{<br>@Marriage&oo@ @MarriageDate&%j.%n.%Y@</br>}\n" .
-				 "{<br>@MarriagePlace&-2,1@)</br>}" . "\n"  . "</table>" . "\n" .
-				 '@Gedcom@' .
-				 '</textarea></td></tr>';
+		foreach (array("individuals", "families") as $s1) {
+			echo '<tr><td class="descriptionbox width30 wrap" colspan="5">', I18N::translate (
+					'Template for ' . $s1 ), '</td></tr>';
+			
+			foreach (array("label", "description") as $s2) {
+				echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate ("Node " . $s2), '</td>';
+				$filename = $directory . "/template_" . $s1 . "_" . $s2 . ".xml";
+				$myfile = fopen($filename, "r") or die("Unable to open file!");
+				$s = fread($myfile,filesize($filename));
+				$nrow = substr_count($s, "\n") + 1;
+				echo '<td class="optionbox" colspan="4">' .
+						'<textarea rows="' . $nrow . '" cols="100" name="' . $s1 . "_" . $s2 . '_template">';
+				echo $s;
+				fclose($myfile);
+				echo '</textarea></td></tr>';
+				
+			}
+		}
 		
 		// keyword description
 		echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate ( 
@@ -544,7 +521,7 @@ class ExportGraphmlModule extends AbstractModule implements
 			
 			// start with <html>
 			$template_array = array (
-					array ("component" => '<html>',"type" => 'string',
+					array ("component" => '{', "type" => 'string',
 							"format" => "" , "fact" => ""
 					) 
 			);
@@ -606,8 +583,8 @@ class ExportGraphmlModule extends AbstractModule implements
 				}
 			}
 			
-			// end with </html>
-			$template_array [$i] = array ("component" => '</html>',
+			// end with
+			$template_array [$i] = array ("component" => '}',
 					"type" => 'string',"format" => '', "fact" => ''
 			);
 		} else {
@@ -643,9 +620,9 @@ class ExportGraphmlModule extends AbstractModule implements
 		
 		// Split templates
 		$template ["label"] = $this->splitTemplate ( 
-				$parameter ["ind_label_template"] );
+				$parameter ["individuals_label_template"] );
 		$template ["description"] = $this->splitTemplate ( 
-				$parameter ["ind_description_template"] );
+				$parameter ["individuals_description_template"] );
 		
 		// Get header.
 		// Buffer the output. Lots of small fwrite() calls can be very slow when writing large files.
@@ -820,9 +797,9 @@ class ExportGraphmlModule extends AbstractModule implements
 		 */
 		// Split templates
 		$template ["label"] = $this->splitTemplate ( 
-				$parameter ["family_label_template"] );
+				$parameter ["families_label_template"] );
 		$template ["description"] = $this->splitTemplate ( 
-				$parameter ["family_description_template"] );
+				$parameter ["families_description_template"] );
 		// Get all families
 		$rows = Database::prepare ( 
 				"SELECT f_id AS xref, f_gedcom AS gedcom" .

@@ -1,0 +1,7 @@
+@&<html><table>
+<br>{@GivenName&1,2,3,.@ }@SurName@</br>
+{<br>{*@BirthDate&%j.%n.%Y@}{ @BirthPlace&1,-1@}</br>}
+{<br>†@DeathDate&%j.%n.%Y@}{ @DeathPlace&1,-1@}</br>}
+{<br>@FactOCCU@</br>}
+</table>
+@Gedcom@</html>
