@@ -195,7 +195,7 @@ class ExportGraphmlModule extends AbstractModule implements
 				 '</table></td>';
 		
 		// Box style header
-		echo '<tr><td class="descriptionbox width30 wrap" rowspan="5">', I18N::translate ( 
+		echo '<tr><td class="descriptionbox width30 wrap" rowspan="6">', I18N::translate ( 
 				'Box style' ), '</td>';
 		echo '<td class="descriptionbox width30 wrap"  colspan="1">', I18N::translate ( 
 				'Male' ), '</td>';
@@ -251,10 +251,15 @@ class ExportGraphmlModule extends AbstractModule implements
 		
 		// Border color
 		echo '<tr>';
-		foreach(array("male", "female", "unknown", "family") as $s) {
+		foreach(array("male", "female", "unknown") as $s) {
+			echo '<td class="optionbox" colspan="1">Border color
+					<input type="color" value="#660066" name="border_' . $s . '"></td>';
+		}
+		foreach(array("family") as $s) {
 			echo '<td class="optionbox" colspan="1">Border color
 					<input type="color" value="#c0c0c0" name="border_' . $s . '"></td>';
 		}
+		
 		echo '</tr>';
 		
 		// Box width
@@ -265,6 +270,14 @@ class ExportGraphmlModule extends AbstractModule implements
 		}
 		echo '<td class="optionbox" colspan="1">Symbol width/height
 				<input type="number" value="15" name="box_width_family"></td></tr>';
+		
+		// Border width
+		echo '<tr>';
+		foreach(array("male", "female", "unknown", "family") as $s) {
+			echo '<td class="optionbox" colspan="1">Border width
+					<input type="number" value="1.0" step="0.1" name="border_width_' . $s . '"></td>';
+		}
+		echo '</tr>';
 		
 		// Default figure
 		echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate ( 
@@ -290,7 +303,7 @@ class ExportGraphmlModule extends AbstractModule implements
 		// Edge line width
 		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate ( 
 				'Line width of edge' ), '</td><td class="optionbox" colspan="4">
-			<input type="number" value="1.5" step="0.1" name="edge_line_width" min="1" max="7"></td></tr>';
+			<input type="number" value="1.0" step="0.1" name="edge_line_width" min="1" max="7"></td></tr>';
 				
 		// Submit button
 		echo '<tr><td class="topbottombar" colspan="6">', '<button>', I18N::translate ( 
@@ -643,26 +656,17 @@ class ExportGraphmlModule extends AbstractModule implements
 			$record = Individual::getInstance ( $row->xref, $tree );
 			
 			$sex = $record->getSex ();
-			if ($sex == "F") {
-				$col = $parameter ['color_female'];
-				$node_style = $parameter ['node_style_female'];
-				$col_border = $parameter ['border_female'];
-				$box_width = $parameter ['box_width_female'];
-				$portrait_fallback = $parameter ['default_portrait_female'];
-			} elseif ($sex == "M") {
-				$col = $parameter ['color_male'];
-				$node_style = $parameter ['node_style_male'];
-				$col_border = $parameter ['border_male'];
-				$box_width = $parameter ['box_width_male'];
-				$portrait_fallback = $parameter ['default_portrait_male'];
-			} else {
-				$col = $parameter ['color_unknown'];
-				$node_style = $parameter ['node_style_unknown'];
-				$col_border = $parameter ['border_unknown'];
-				$box_width = $parameter ['box_width_unknown'];
-				$portrait_fallback = $parameter ['default_portrait_unknown'];
+			if ($sex == "F") {$s = 'female';
+			} elseif ($sex == "M") {$s = 'male';
+			} else {$s = 'unknown';
 			}
-			
+			$col = $parameter ['color_' . $s];
+			$node_style = $parameter ['node_style_' . $s];
+			$col_border = $parameter ['border_' . $s];
+			$box_width = $parameter ['box_width_' . $s];
+			$border_width = $parameter ['border_width_' . $s];
+			$portrait_fallback = $parameter ['default_portrait_' . $s];
+				
 			foreach ( array ("label","description" 
 			) as $a ) {
 				
@@ -778,7 +782,7 @@ class ExportGraphmlModule extends AbstractModule implements
 					 '" width="' . $box_width . '" x="10" y="10"/> <y:Fill color="' . $col .
 					 '" transparent="false"/> <y:BorderStyle color="' .
 					 $col_border .
-					 '" type="line" width="1.0"/> <y:NodeLabel alignment="center" autoSizePolicy="content" hasBackgroundColor="false" hasLineColor="false" textColor="#000000" fontFamily="' . $parameter ['font'] . '" fontSize="12" fontStyle="plain" visible="true" modelName="internal" modelPosition="l" width="129" height="19" x="1" y="1">';
+					 '" type="line" width="' . $border_width . '"/> <y:NodeLabel alignment="center" autoSizePolicy="content" hasBackgroundColor="false" hasLineColor="false" textColor="#000000" fontFamily="' . $parameter ['font'] . '" fontSize="12" fontStyle="plain" visible="true" modelName="internal" modelPosition="l" width="129" height="19" x="1" y="1">';
 			
 			// no line break befor $nodetext allowed
 			$buffer .= $nodetext ["label"] . "\n" .
@@ -877,6 +881,7 @@ class ExportGraphmlModule extends AbstractModule implements
 			$node_style = $parameter ['node_style_family'];
 			$col_border = $parameter ['border_family'];
 			$box_width = $parameter ['box_width_family'];
+			$border_width = $parameter ['border_width_family'];
 			$label_rows = count ( explode ( "&lt;br&gt;", $nodetext ["label"] ) ) +
 				
 			$buffer .= '<node id="' . $row->xref . '">' . "\n";
@@ -889,17 +894,21 @@ class ExportGraphmlModule extends AbstractModule implements
 			
 			if ($nodetext ["label"] == "") {
 				$visible = "false";
+				$border = '<y:BorderStyle hasColor="true" type="line" color="' . $col_border . '" width="' . $border_width . '"/>';
 			} else {
 				$visible = "true";
+				$border = '<y:BorderStyle hasColor="false" type="line" width="' . $border_width . '"/>';
 			}
 					
 			$buffer .= '<data key="d3"> <y:ShapeNode>' .
 					 '<y:Geometry height="'. 
 					 $box_width . '" width="' .
 					 $box_width . '" x="28" y="28"/>' . 
-					 '<y:Fill color="#000000" color2="#000000" transparent="false"/>' .
-					 '<y:BorderStyle hasColor="false" type="line" width="1.0"/>' .
-					 '<y:NodeLabel alignment="center" autoSizePolicy="content" ' .
+					 '<y:Fill color="#000000" color2="#000000" transparent="false"/>';
+			
+			$buffer .=		 $border;
+					 //'<y:BorderStyle hasColor="false" type="line" width="' . $border_width . '"/>' .
+			$buffer .=	'<y:NodeLabel alignment="center" autoSizePolicy="content" ' .
 					 'backgroundColor="' . $col . '" hasLineColor="true" ' . 'lineColor="' . $col_border . '" ' .
 					 'textColor="#000000" fontFamily="' . $parameter ['font'] . '" fontSize="12" ' .
 					 'fontStyle="plain" visible="' . $visible . '" modelName="internal" modelPosition="c" ' .
