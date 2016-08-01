@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-// namespace Thorsten\WebtreesAddOn\export_graphml;
+
 use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Menu;
@@ -26,23 +26,26 @@ use Fisharebest\Webtrees\Individual;
 use Fisharebest\Webtrees\Family;
 use Fisharebest\Webtrees\Date;
 use Fisharebest\Webtrees\Functions\Functions;
-use Fisharebest\Webtrees\Controller\IndividualController;
+use Symfony\Component\Finder\Tests\FakeAdapter\NamedAdapter;
+use Symfony\Component\Finder\Iterator\FilenameFilterIterator;
+use phpDocumentor\Reflection\DocBlock\Tag;
 
 /**
- * Class ExportGraphmlModule
+ * Class to export a family tree in graphml format
  *
- * This class provides a report which exports a tree in a file in graphml format.
+ * This class provides code to exporta family tree in graphml format.
  * The graphml format can be imported by yed to generate family tree charts.
- * yed support all-in-one charts.
+ * yed supports all-in-one charts.
  */
 class ExportGraphmlModule extends AbstractModule implements 
 		ModuleReportInterface {
 	/**
-	 * Return a menu item for this report.
-	 * When selected it called the function modAction with parameter
+	 * Return a report menu item for the graphml export
+	 *
+	 * When selecting the item it calls the function modAction with parameter
 	 * mod_action=set_parameter.
 	 *
-	 * @return Menu
+	 * @return Menu The report menu item for the graphml export.
 	 */
 	public function getReportMenu() {
 		return new Menu ( $this->getTitle (), 
@@ -56,23 +59,24 @@ class ExportGraphmlModule extends AbstractModule implements
 	/**
 	 * Returns the title on tabs, menu
 	 *
-	 * @return string
+	 * @return string Title of the report
 	 */
 	public function getTitle() {
-		return I18N::translate ( 'Export Graphml' );
+		return I18N::translate ( 'Export as graphml' );
 	}
 	
 	/**
 	 * Returns the title in the report sub-menu
 	 *
-	 * @return string
+	 * @return string Title of the report
 	 */
 	public function getReportTitle() {
-		return I18N::translate ( 'Export Graphml' );
+		return I18N::translate ( 'Export as graphml' );
 	}
 	
 	/**
 	 * A sentence describing what this module does.
+	 * 
 	 * This text appears on the
 	 * admin pages where the module can be activeated.
 	 *
@@ -94,24 +98,25 @@ class ExportGraphmlModule extends AbstractModule implements
 	/**
 	 * This module is the main entry function of this class.
 	 *
-	 *
+	 * Depending on the parameter $mod_action export form is opened to define the 
+	 * export format or the export is started.
+	 * 
 	 * @param string $mod_action
-	 *        	= 'set_parameter'
-	 *        	opens a form to get parameter for the export
-	 * @param string $mod_action
-	 *        	= 'export' writes the grapgml file
+	 *        	= "set_parameter"
+	 *        	opens a form to get parameter for the export,
+	 *        	= "export" writes the graphml file
 	 */
 	public function modAction($mod_action) {
 		global $WT_TREE;
 		
 		switch ($mod_action) {
 			case 'set_parameter' :
-				// open a form to get the parameter for the export
+				// open a form to define the export format
 				$this->setParameter ();
 				break;
-			case 'export' :
 				
-				// file name is the tree name
+			case 'export' :
+				// file name is set to the tree name
 				$download_filename = $WT_TREE->getName ();
 				if (strtolower ( substr ( $download_filename, - 8, 8 ) ) !=
 						 '.graphml') {
@@ -135,7 +140,9 @@ class ExportGraphmlModule extends AbstractModule implements
 	}
 	
 	/**
-	 * This function generates a form to get the export parameter
+	 * Generate a form to define the graphml format
+	 * 
+	 * This function generates a form to define the export parameter
 	 * and to trigger the export by submit.
 	 */
 	private function setParameter() {
@@ -147,7 +154,7 @@ class ExportGraphmlModule extends AbstractModule implements
 		
 		$directory = WT_MODULES_DIR . $this->getName();
 		
-		// header
+		// header line of the form
 		echo '<div id="reportengine-page">
 		<form name="setupreport" method="get" action="module.php">
 		<input type="hidden" name="mod" value=', $this->getName (), '>
@@ -157,17 +164,26 @@ class ExportGraphmlModule extends AbstractModule implements
 		<tr><td class="topbottombar" colspan="7">', I18N::translate ( 
 				'Export tree in graphml format' ), '</td></tr>';
 		
-		// Individual node / description 
+		/*
+		 * Individual/family node text and description
+		 * 
+		 * Reads the template from file and opens a textarea with the template
+		 * used for the node text and node description 
+		 *  
+		 */
 		foreach (array("individuals", "families") as $s1) {
 			echo '<tr><td class="descriptionbox width30 wrap" colspan="5">', I18N::translate (
 					'Template for ' . $s1 ), '</td></tr>';
 			
 			foreach (array("label", "description") as $s2) {
-				echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate ("Node " . $s2), '</td>';
+				echo '<tr><td class="descriptionbox width30 wrap">', 
+				I18N::translate ("Node " . $s2), '</td>';
+
 				$filename = $directory . "/template_" . $s1 . "_" . $s2 . ".xml";
 				$myfile = fopen($filename, "r") or die("Unable to open file!");
 				$s = fread($myfile,filesize($filename));
 				$nrow = substr_count($s, "\n") + 1;
+
 				echo '<td class="optionbox" colspan="4">' .
 						'<textarea rows="' . $nrow . '" cols="100" name="' . $s1 . "_" . $s2 . '_template">';
 				echo $s;
@@ -177,25 +193,40 @@ class ExportGraphmlModule extends AbstractModule implements
 			}
 		}
 		
-		// keyword description
+		/*
+		 * Keyword description
+		 * 
+		 * Creates a table which lists all keywords which can be used in templates.
+		 * 
+		 * 
+		 */
 		echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate ( 
-				'Keyword' ), '</td>';
+				'Keywords' ), '</td>';
 		echo '<td class="optionbox" colspan="4">' .
-				 'The first two characters define the identifier for a tag and the format, e.g. @&.' .
+				 I18N::translate ('List of allowed keywords to be used in the templates.') . ' ' .	
+				 I18N::translate ('The first two characters within a template define the identifier for a tag and the format part, e.g. @&.') .
 				 '<table border="1">' .
-				 '<tr><th>tag</th><th>format</th><th>example for identifier @&</th></tr>' .
-				 '<tr><td>GivenName</td><td>list of given names, "." for abreviation</td><td>@GivenName&1,2,3.@</td></tr>' .
+				 '<tr><th>' . I18N::translate ('Tag') .'</th><th>' . I18N::translate ('Format') .
+				 '</th><th>' . I18N::translate ('Example given identifier @&') .'</th></tr>' .
+				 '<tr><td>GivenName</td><td>' . I18N::translate ('position list of given names') . ', "." ' .
+				 I18N::translate('for abbreviation') . '</td><td>@GivenName&1,2,3.@</td></tr>' .
 				 '<tr><td>SurName</td><td>-</td><td>@SurName@</td></tr>' .
-				 '<tr><td>BirthDate, DeathDate, MarriageDate</td><td> PHP date format specification</td><td>@DeathDate&%j.%n.%Y@</td></tr>' .
-				 '<tr><td>BirthPlace, DeathPlace, MarriagePlace</td><td>list of positions, exclusion followed after / </td><td>@DeathPlace&2,3/USA@</td></tr>' .
-				 '<tr><td>Marriage<td>any string</td><td>@Marriage&oo@</td></tr>' .
-				 '<tr><td>FactXXXX<td>position in the ordered fact list</td><td>@FactOCCU&1,2,-1@</td></tr>' .
-				 '<tr><td>Portrait<td>"fallback" or "silhouette"</td><td>@Portrai&fallback@</td></tr>' .
+				 '<tr><td>BirthDate, DeathDate, MarriageDate</td><td>' . I18N::translate('PHP date format specification') . '</td><td>@DeathDate&%j.%n.%Y@</td></tr>' .
+				 '<tr><td>BirthPlace, DeathPlace, MarriagePlace</td><td>' . I18N::translate('list of positions, exclusion followed after') . ' /' . '</td><td>@DeathPlace&2,3/USA@</td></tr>' .
+				 '<tr><td>Marriage<td>' . I18N::translate('any string') . '</td><td>@Marriage&oo@</td></tr>' .
+				 '<tr><td>FactXXXX<td>' . I18N::translate('position in the ordered fact list') . '</td><td>@FactOCCU&1,2,-1@</td></tr>' .
+				 '<tr><td>Portrait<td>"fallback"' .  I18N::translate('or') . '"silhouette"</td><td>@Portrai&fallback@</td></tr>' .
 				 '<tr><td>Gedcom<td>-</td><td>@Gedcom@</td></tr>' .
 				 '</table></td>';
 		
-		// Box style header
-		echo '<tr><td class="descriptionbox width30 wrap" rowspan="6">', I18N::translate ( 
+		/*
+		 * Box style header
+		 * 
+		 * This is the header line for the block which defines the box styles.
+		 * Different box styles can be defines for 
+		 * individuals (male, femal, unknown sex) and families.
+		 */ 
+		echo '<tr><td class="descriptionbox width30 wrap" rowspan="7">', I18N::translate ( 
 				'Box style' ), '</td>';
 		echo '<td class="descriptionbox width30 wrap"  colspan="1">', I18N::translate ( 
 				'Male' ), '</td>';
@@ -206,7 +237,12 @@ class ExportGraphmlModule extends AbstractModule implements
 		echo '<td class="descriptionbox width30 wrap"  colspan="1">', I18N::translate ( 
 				'Family' ), '</td></tr>';
 		
-		// node type
+		/*
+		 * Box style - box type
+		 * 
+		 * Here the types of the boxes are defined.
+		 */ 
+
 		echo '<tr>';
 		foreach(array("male", "female", "unknown") as $s) {
 			echo '<td class="optionbox"  colspan="1">' . 
@@ -239,47 +275,79 @@ class ExportGraphmlModule extends AbstractModule implements
 				 '<option value="trapezoid2">Trapezoid2</option>' .
 				 '</select></td></tr>';
 		
-		// Fill color
-			echo '<tr><td class="optionbox" colspan="1">Fill color 
-					<input type="color" value="#ccccff" name="color_male"></td>';
-			echo '<td class="optionbox" colspan="1">Fill color 
-					<input type="color" value="#ffcccc" name="color_female"></td>';
-			echo '<td class="optionbox" colspan="1">Fill color 
-					<input type="color" value="#ffffff" name="color_unknown"></td>';
-			echo '<td class="optionbox" colspan="1">Fill color
-					<input type="color" value="#ffffff" name="color_family"></td></tr>';
+		/*
+		 * Box style - Fill color
+		 * 
+		 * Here the fill colors of the boxes are defined.
+		 */ 
+		echo '<tr><td class="optionbox" colspan="1">' .  I18N::translate ('Fill color') . 
+				'<input type="color" value="#ccccff" name="color_male"></td>';
+		echo '<td class="optionbox" colspan="1">' .  I18N::translate ('Fill color') . 
+				'<input type="color" value="#ffcccc" name="color_female"></td>';
+		echo '<td class="optionbox" colspan="1">' .  I18N::translate ('Fill color') . 
+				'<input type="color" value="#ffffff" name="color_unknown"></td>';
+		echo '<td class="optionbox" colspan="1">' .  I18N::translate ('Fill color') . 
+				'<input type="color" value="#ffffff" name="color_family"></td></tr>';
 		
-		// Border color
+		/*
+		 * Box style - Border color
+		 * 
+		 * Here the border colors of the boxes are defined.
+		 */ 
 		echo '<tr>';
 		foreach(array("male", "female", "unknown") as $s) {
-			echo '<td class="optionbox" colspan="1">Border color
-					<input type="color" value="#660066" name="border_' . $s . '"></td>';
+			echo '<td class="optionbox" colspan="1">' .  I18N::translate ('Border color') .
+					'<input type="color" value="#660066" name="border_' . $s . '"></td>';
 		}
 		foreach(array("family") as $s) {
-			echo '<td class="optionbox" colspan="1">Border color
-					<input type="color" value="#c0c0c0" name="border_' . $s . '"></td>';
-		}
-		
+			echo '<td class="optionbox" colspan="1">' .  I18N::translate ('Border color') .
+					'<input type="color" value="#c0c0c0" name="border_' . $s . '"></td>';
+		}		
 		echo '</tr>';
 		
-		// Box width
+		/*
+		 * Box style - Box width
+		 * 
+		 * Here the widths of the boxes are defined.
+		 */ 
 		echo '<tr>';
 		foreach(array("male", "female", "unknown") as $s) {
-			echo '<td class="optionbox" colspan="1">Box width
-					<input type="number" value="250" name="box_width_' . $s . '"></td>';
+			echo '<td class="optionbox" colspan="1">' .  I18N::translate ('Box width') .
+					'<input type="number" value="250" name="box_width_' . $s . '"></td>';
 		}
-		echo '<td class="optionbox" colspan="1">Symbol width/height
-				<input type="number" value="15" name="box_width_family"></td></tr>';
+		echo '<td class="optionbox" colspan="1">' . I18N::translate('Symbol') . " " .
+		I18N::translate('width') . "/" . I18N::translate('height') .
+				'<input type="number" value="15" name="box_width_family"></td></tr>';
 		
-		// Border width
+		/*
+		 * Box style - Border line width
+		 * 
+		 * Here the widths of the border lines are defined.
+		 */ 
 		echo '<tr>';
 		foreach(array("male", "female", "unknown", "family") as $s) {
-			echo '<td class="optionbox" colspan="1">Border width
-					<input type="number" value="1.0" step="0.1" name="border_width_' . $s . '"></td>';
+			echo '<td class="optionbox" colspan="1">' . I18N::translate('Border width') .
+					'<input type="number" value="1.0" step="0.1" name="border_width_' . $s . '"></td>';
 		}
 		echo '</tr>';
 		
-		// Default figure
+		/*
+		 * Box style - Font size
+		 * 
+		 * Here the font sizes of the text are defined.
+		 */ 
+		echo '<tr>';
+		foreach(array("male", "female", "unknown", "family") as $s) {
+			echo '<td class="optionbox" colspan="1">' . I18N::translate('Font size') .
+					'<input type="number" value="10" step="1" name="font_size_' . $s . '"></td>';
+		}
+		echo '</tr>';
+		
+		/*
+		 * Box style - default silhouettes
+		 * 
+		 * Here the default silhouettes are defined.
+		 */ 
 		echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate ( 
 				'Default portrait' ), '</td>';
 		foreach(array("male", "female", "unknown") as $s) {
@@ -289,7 +357,11 @@ class ExportGraphmlModule extends AbstractModule implements
 		
 		echo '<td class="optionbox" colspan="1"/></tr>';
 		
-		// Font
+		/*
+		 * Font type
+		 * 
+		 * Here the font type is defined.
+		 */ 
 		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate ( 
 				'Font' ), '</td><td class="optionbox" colspan="4">' .
 				 '<select name="font">' .
@@ -300,7 +372,11 @@ class ExportGraphmlModule extends AbstractModule implements
 				 '<option value="Lucida Handwriting">Lucida Handwriting</option>' .
 				 '</select></td></tr>';
 						
-		// Edge line width
+		/*
+		 * Edge line width
+		 * 
+		 * Here the width of edge lines is defined.
+		 */ 
 		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate ( 
 				'Line width of edge' ), '</td><td class="optionbox" colspan="4">
 			<input type="number" value="1.0" step="0.1" name="edge_line_width" min="1" max="7"></td></tr>';
@@ -312,33 +388,54 @@ class ExportGraphmlModule extends AbstractModule implements
 	}
 	
 	/**
-	 * Format name
+	 * Get the given name in a predefined format 
 	 *
-	 * @param Individual $record        	       	
-	 * @param string $format        	
-	 * @return string
+	 * This module returns the given name in a format defined by $format.
+	 * Suppose the name is "Paul Micheal Patrick" then the full name is returned 
+	 * if no format is defined.
+	 * If $format="1" then "Paul" is returned. 
+	 * If $format="1,3" then "Paul Patrick" is returned. 
+	 * If $format="1,." then "Paul M. P." is returned. 
+	 * If $format="." then "P. M. P." is returned. 
+	 * If $format="1,2." then "Paul M." is returned. 
+	 *
+	 * @param Individual $record record for an idividual    	       	
+	 * @param string $format The format of the given name. It is a comma separated 
+	 * list of numbers where each number stands for one of the given names. If a dot "."
+	 * is given then all following given names are abbreviated.
+	 * @return string The given name
 	 */
 	private function getGivenName($record, $format) {
+		// first get the given name
 		$tmp = $record->getAllNames ();
 		$givn = $tmp [$record->getPrimaryName ()] ['givn'];
-		// $surn = $tmp [$record->getPrimaryName ()] ['surname'];
-		
+
+		// if $format is given then apply the format
 		if ($givn && $format) {	
 			$exp_givn = explode ( ' ', $givn );
 			$count_givn = count ( $exp_givn );
+			
 			$exp_format = explode ( ",", $format );
 			$givn = "";
 			
+			// loop over all parts of the given name and check if it is 
+			// specified in the format 
 			for ($i=0; $i < $count_givn; $i++) {
 				$s = (string) $i+1;
 				if (in_array($s,$exp_format)) {
+					// given name to be included
 					$givn .= " " . $exp_givn[$i];
 				} elseif (in_array(".",$exp_format) || in_array($i . ".",$exp_format)) {
+					// - if "." is included in the format list then all parts of the name 
+					//   are included abbreviated
+					// - a given name is also included abbreviated if the positions is 
+					//   included in $format followed by "."
 					$givn .= " " . $exp_givn[$i]{0} . "." ;
 				}
 			}
 		}
 	
+		// now replace unknown names with three dots
 		$givn = str_replace ( array ('@P.N.','@N.N.'), 
 				array (I18N::translateContext ( 'Unknown given name', '…' ),
 						I18N::translateContext ( 'Unknown surname', '…' ) 
@@ -350,34 +447,53 @@ class ExportGraphmlModule extends AbstractModule implements
 	/**
 	 * Format a place
 	 *
-	 * @param string $place        	
-	 * @param string $format        	
+	 * Creates a string with a place where the format is defined by $format.
+	 * Suppose the place is "street, town, county, country".
+	 * if $format is not given the "street, town, county, country" is returned.
+	 * if $format="1" then the "street" is returned.
+	 * if $format="-1" then the "country" is returned.
+	 * if $format="2,-1" then the "town, country" is returned.
+	 * if $format="2,3,-1" then the "town, county, country" is returned.
+	 * if $format="2/town,3,-1/another_country/third_country" then the "county, country" is returned.
+	 * "/" is a separator which defines a list of names which are omitted.
+	 *
+	 * @param object $place A place object       	
+	 * @param string $format The hierarchy levels to be returned.     	
 	 * @return string
 	 */
 	private function formatPlace($place, $format) {
 		$place_ret = "";
+		// get the name of the place object
 		if (is_object($place) && get_class($place) == "Fisharebest\Webtrees\Place") {	
 			$place = $place->getGedcomName ();
 		}
 		if ($place) {
-			// $place = strip_tags ( $place );
 			if (! $format) {
+				// use full place name if $format is not given
 				$place_ret .= $place;
 			} else {
 				$format_place_level = explode ( ",", $format );
 				$exp_place = explode ( ',', $place );
 				$count_place = count ( $exp_place );
+				
+				// loop over format components
 				foreach ( $format_place_level as $s ) {
+					// check if there are names to be omitted seperated by "/"
 					$sarray =  explode ( "/", $s );
 					$i = (int) $sarray[0];
 					if (abs($i) <= $count_place && $i != 0) {
+						// the required hierarch level must exists
 						if ($i > 0) {
+							// hierarchy level counted from left
 							$sp = trim($exp_place [$i - 1]);
 						} else {
+							// hierarchy level counted from right
 							$sp = trim($exp_place [$count_place + $i]);
 						}
+						// check if name should be omitted
 						if (in_array($sp, $sarray)) $sp ="";
 						
+						// add comma separator
 						if ($place_ret != "" & $sp != "") $place_ret .= ", ";
 						$place_ret .= $sp;
 					}
@@ -390,8 +506,11 @@ class ExportGraphmlModule extends AbstractModule implements
 	/**
 	 * Format a date
 	 *
+	 * This module takes a date object and returns the date formatted as
+	 * defined by $format.
+	 * 
 	 * @param Date $date        	
-	 * @param string $format        	
+	 * @param string $format A standard PHP date format.        	
 	 * @return string
 	 */
 	private function formatDate($date, $format) {
@@ -404,77 +523,151 @@ class ExportGraphmlModule extends AbstractModule implements
 	}
 	
 	/**
-	 * Get portrait
+	 * Returns the portrait file name
 	 *
-	 * @param Individual $record        	
-	 * @return string
+	 * This module returns the file name of the portrait of an individual.
+	 *
+	 * @param Individual $record The record of an idividual
+	 * @param string $format If $format = "silhouette" then allways the fallback 
+	 * picture is used. If $format = "fallback" then the portrait is used and only
+	 * if this is not defined the fallback picture is used.
+	 * @param string $servername If $servername = true then the server file name
+	 * including the path is returned.
+	 * @return string The file name of the portrait
 	 */
-	private function getPortrait($record) {
+	private function getPortrait($record, $format, $servername = false) {
 		$portrait_file = "";
-		$portrait = $record->findHighlightedMedia ();
 		
-		if ($portrait) {
-			$portrait_file = $portrait->getFilename ();
+		// get the fallback picture
+		// the name is defined in the report form
+		if ($format == "silhouette" || $format == "fallback") {
+			$sex = $record->getSex ();
+			if ($sex == "F") {$s = 'female';
+			} elseif ($sex == "M") {$s = 'male';
+			} else {$s = 'unknown';
+			}
+			if (array_key_exists('default_portrait_' . $s,$_GET )) {
+				$portrait_fallback = $_GET ['default_portrait_' . $s];
+			} else {
+				$portrait_fallback = "";
+			}
 		}
+
+
+		if ($format == "silhouette") {
+			// return the fallback figure if $format == "silhouette"
+			$portrait_file  = $portrait_fallback;
+		} else {
+			$portrait = $record->findHighlightedMedia ();
+			if ($portrait) {
+				if ($servername) {
+					// get the full server name including path
+					$portrait_file  = $portrait->getServerFilename();
+				} else {
+					// get the file name without full server path
+					$portrait_file  = $portrait->getFilename();
+				}
+			}
+			If ($format == "fallback" && $portrait_file == "") $portrait_file = $portrait_fallback;
+		}	
 
 		return $portrait_file;
 	}
 	
 	/**
-	 * Get occupation
+	 * Get portrait size
+	 *
+	 * This module returns the height or width a portrait must have
+	 * to preserve the aspect ratio given a pre-defined width or height.
+	 * A width is defined when $format[0] starts with a "w" followed by the width.
+	 * A height is defined when $format[0] starts with a "h" followed by the height.
+	 *
+	 * If $format is of length 2 then the second array element contains a default 
+	 * size. This is used for fallback figures.
 	 *
 	 * @param Individual $record
-	 * @param string $fact        	
-	 * @param string $format        	
+	 * @param array $format
 	 * @return string
 	 */
+	private function getPortraitSize($record, $format) {
+		// get portrait file
+		$format_Size = $format[0];
+		if (count($format) > 1) {
+			$format_default = $format[1];
+		} else {
+			$format_default = "";
+		}
+		
+		$portrait_file = $this->getPortrait($record, "", true);
+		$image_length = $format_default;
+		
+		if ($portrait_file != "" && strlen($format_Size) > 1) {
+			$constraint = $format_Size{0};
+			$size_constraint = (float) substr($format_Size,1);
+			$image_size = getimagesize($portrait_file);
+			$width = $image_size[0];
+			$height = $image_size[1];
+
+			if ($constraint == "w") {
+				// constraint is the width, get the height
+				$image_length = (int) ($height * $size_constraint / $width);
+			} else {
+				// constraint is the height, get the width
+				$image_length = (int) ($width * $size_constraint / $height);
+			}
+		}
+
+		return $image_length;
+	}
+	
+	/**
+	 * Get facts
+	 * 
+	 * This module return a list of facts for an individual or family. All facts are 
+	 * are of gedcom type defined by $fact. E.g. $fact = "OCCU" selects occupations.
+	 * The $format parameter defines which facts are returned, e.g. 
+	 * $format=-1 means that the last fact with identifier $fact from the
+	 * ordered fact list will be returned. Doublets in the fact list are removed
+	 * automatically.
+	 *
+	 * @param Individual $record The record for which the facts are returned
+	 * @param string $fact The gedcom identifier of the fact, e.g. "OCCU"
+	 * @param string $format A list of positions in the ordered fact list which are returned
+	 * @return string A comma separted list of facts
+	 */
 	private function getFact($record, $fact, $format) {
-		// get occupation
+		// get all facts with identifier $fact as ordered array
 		$fact_string = "";
 		$Facts = $record->getFacts ( $fact , true);
-		/*$date = null;
-		//$sortFacts = Functions::sortFacts($Facts);
-		foreach ( $Facts as $Fact ) {
-			$Fact_date = $Fact->getDate ();
-			if (! $fact_string) {
-				$fact_string = $Fact->getValue ();
-				if ($Fact_date->isOK ())
-					$date = $Fact_date;
-			} elseif ($Fact_date->isOK ()) {
-				if ($date) {
-					// if (Date::compare($date->maximumDate(),$OCCU_date->maximumDate()) > 0) {
-					if ($date->maximumDate ()->maxJD <
-							 $Fact_date->maximumDate ()->maxJD) {
-						$date = $Fact_date;
-						$fact_string = $Fact->getValue ();
-					}
-				} else {
-					$date = $Fact_date;
-					$fact_string = $Fact->getValue ();
-				}
-			}
-		}*/
 		if ($Facts) {
 			if (! $format) {
+				// if $format is not given return all items
 				foreach ($Facts as $Fact) {
 					if ($fact_string != "") $fact_string .= $fact_string;
 					$fact_string .= $Fact->getValue ();
 				}
 			} else {
+				// selects the items from the fact array as defined
+				// in the $format parameter
 				$exp_format = explode ( ",", $format );
 				$count_facts = count ($Facts);
+				// fact list is used to avoid having facts twice
 				$fact_list = array();
+				// loop over all components of $format
 				foreach ( $exp_format as $s ) {
 					$i = (int) $s;
-					if (abs($i) <= $count_facts && $i != 0) {							
+					// check if item position exists
+					if (abs($i) <= $count_facts && $i != 0) {						
 						if ($i > 0) {
 							$j = $i -1;
 						} else {
+							// if position is negativ count from the end
 							$j = $count_facts + $i;
 						}
 						$fact_value = trim($Facts [$j]->getValue ());
 						if (!in_array($fact_value, $fact_list)) {
-							if ($fact_string != "") $fact_string .= $fact_string;
+							// add a separator
+							if ($fact_string != "") $fact_string .= ", ";
 							$fact_list[] = $fact_value;
 							$fact_string .= $fact_value;
 						}
@@ -489,7 +682,9 @@ class ExportGraphmlModule extends AbstractModule implements
 	/**
 	 * Return the header for the graphml file
 	 *
-	 * @return String
+	 * This module returns the header of the graphml file
+	 * 
+	 * @return String The header of the graphml file
 	 */
 	private function graphmlHeader() {
 		return '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' . "\n" .
@@ -511,7 +706,9 @@ class ExportGraphmlModule extends AbstractModule implements
 	/**
 	 * Return the footer for the graphml file
 	 *
-	 * #@return String
+	 * This module returns the footer of the graphml file
+	 * 
+	 * @return String The footer of the graphml file
 	 */
 	private function graphmlFooter() {
 		return '<data key="d0"> <y:Resources/> </data>' . "\n" .
@@ -519,20 +716,32 @@ class ExportGraphmlModule extends AbstractModule implements
 	}
 	
 	/**
-	 * Split tempalte into components
+	 * Split template into components
 	 *
-	 * @param String $template        	
-	 * @return Array
+	 * This module takes a template entered in the web form and converts it
+	 * to a list stored in an array. The components of the list are
+	 * either strings or tags with formats. Tags are supposed to be replaced
+	 * by gedcom data during export.
+	 *
+	 * @param String $template The template to be decomposed.   	
+	 * @return Array Each element of the array is itself an array.
+	 * Each of these arrays consist of 4 elements. 
+	 * Element "type" defines if the template component is a string ("string")
+	 * or a tag ("tag"). The "component" contains either the string or the tag
+	 * name. "format" contains a format array and "fact" the gedcom fact identifier
+	 * in case the tag is "Fact".
 	 */
 	private function splitTemplate($template) {
+		// check that the template has at least two characters
 		if (strlen ( $template ) > 2) {
+			// extract the symbols identifying tags and format descriptions
 			$tag = $template {0};
 			$format = $template {1};
-			
+				
 			// remove line breaks
 			$template = trim ( preg_replace ( '/\s+/', ' ', $template ) );
-			
-			// start with <html>
+
+			// start with an "{" to remove everything if no data are found
 			$template_array = array (
 					array ("component" => '{', "type" => 'string',
 							"format" => "" , "fact" => ""
@@ -543,52 +752,67 @@ class ExportGraphmlModule extends AbstractModule implements
 			$pos_end = 1;
 			$pos = 0;
 			
-			// now handle all tags
+			// now split the template searching for the next tag symbol
+			// $pos is the position of the next tag symbol
+			// $pos_end is the position of the 
 			while ( $pos !== false ) {
 				$pos = strpos ( $template, $tag, $pos_end + 1 );
 				if ($pos === false) {
-					// check for a terminating string
+					// no additional tag symbol found
 					if ($pos_end + 1 < strlen ( $template )) {
+						// there is a terminating string at the end of the template
+						// add the string to the return array
+						// substring {...} are removed
 						$template_array [$i] = array (
-								"component" => substr ( $template, 
-										$pos_end + 1 ),"type" => "string",
+								"component" => 	$this->removeBrackets(substr ( $template, 
+										$pos_end + 1 )),"type" => "string",
 								"format" => "" , "fact" => ""
 						);
 						$i ++;
 					}
 				} else {
+					// there is an additional tag symbol
 					
 					if ($pos > $pos_end + 1) {
-						// add a string
+						// there is a string preceeding the tag symbol 
+						// add the string to the return array
+						// substring {...} are removed
 						$template_array [$i] = array (
-								"component" => substr ( $template, 
-										$pos_end + 1, $pos - $pos_end - 1 ),
+								"component" => $this->removeBrackets(substr ( $template, 
+										$pos_end + 1, $pos - $pos_end - 1 )),
 								"type" => "string","format" => "" , "fact" => ""
 						);
 						$i ++;
 					}
 					
+					// now the tag is added to the return array
 					// search for the end of the tag
 					$pos_end = strpos ( $template, $tag, $pos + 1 );
 					
 					if ($pos_end !== false) {
+						// get the format definition
 						$pos_format = strpos ( $template, $format, $pos );
 						
 						if ($pos_format < $pos_end && $pos_format !== false) {
+							// a format definition exists, split it
+							$format_array = explode($format, substr ( $template, 
+											$pos_format + 1, 
+											$pos_end - $pos_format - 1 ));
+							// add the tag to the return array
 							$template_array [$i] = array (
 									"component" => substr ( $template, 
 											$pos + 1, $pos_format - $pos - 1 ),
 									"type" => "tag",
-									"format" => substr ( $template, 
-											$pos_format + 1, 
-											$pos_end - $pos_format - 1 ) , "fact" => ""
+									"format" => $format_array , "fact" => ""
 							);
 							$i ++;
 						} else {
+							// there is not format definition
+							// add the tag to the return array
 							$template_array [$i] = array (
 									"component" => substr ( $template, 
 											$pos + 1, $pos_end - $pos - 1 ),
-									"type" => "tag","format" => "" , "fact" => ""
+									"type" => "tag","format" => array("") , "fact" => ""
 							);
 							$i ++;
 						}
@@ -596,27 +820,51 @@ class ExportGraphmlModule extends AbstractModule implements
 				}
 			}
 			
-			// end with
+			// end with an "}" matching the "{" at the beginning
 			$template_array [$i] = array ("component" => '}',
 					"type" => 'string',"format" => '', "fact" => ''
 			);
+			
+			// now serach for tags defining facts and filling the 
+			// "fact" array element
+			for ($j=0; $j < $i; $j++) {
+				if (substr($template_array [$j]["component"], 0, 4) == "Fact") {
+					$template_array [$j]["fact"] = substr($template_array [$j]["component"], 4);
+					$template_array [$j]["component"] = "Fact";
+				}
+			}
 		} else {
 			$template_array = null;
-		}
-		// extract Fact
-		for ($j=0; $j < $i; $j++) {
-			$b = substr($template_array [$j]["component"], 0, 4);
-			if (substr($template_array [$j]["component"], 0, 4) == "Fact") {
-				$template_array [$j]["fact"] = substr($template_array [$j]["component"], 4);
-				$template_array [$j]["component"] = "Fact";
-			}
 		}
 		
 		return $template_array;
 	}
 	
 	/**
+	 * Remove brackets
+	 * 
+	 * This module removes substring {...} within a string.
+	 *
+	 * @param string $subject the input string where brackets should be 
+	 * removed.
+	 * @return string The input stinr where brackets are removed.
+	 */
+	private function removeBrackets($subject) {
+		$count = 1;
+		// take into account that there might be multiple brackets.
+		while($count > 0) {
+			// use regular expressions to remove brackets
+			$subject = preg_replace ( "/{[^{}]*}/", "",
+					$subject, -1, $count );
+		}
+		return $subject;
+	}
+	
+	/**
 	 * Export the data in graphml format
+	 * 
+	 * This is the main module which export the familty tree in graphml
+	 * format.
 	 *
 	 * @param Tree $tree
 	 *        	Which tree to export
@@ -625,20 +873,20 @@ class ExportGraphmlModule extends AbstractModule implements
 	 */
 	private function exportGraphml(Tree $tree, $gedout) {
 		
-		// define the access level
-		// $access_level = Auth::accessLevel ( $tree, Auth::user () );
-		
-		// get parameter entered in the form defined in set_parameter()
+		// get parameter entered in the web form
 		$parameter = $_GET;
 		
-		// Split templates
+		// First split the html templates
+		// This is done once and later used when exporting
+		// data for the familty tree record.
 		$template ["label"] = $this->splitTemplate ( 
 				$parameter ["individuals_label_template"] );
 		$template ["description"] = $this->splitTemplate ( 
 				$parameter ["individuals_description_template"] );
 		
 		// Get header.
-		// Buffer the output. Lots of small fwrite() calls can be very slow when writing large files.
+		// Buffer the output. Lots of small fwrite() calls can be very 
+		// slow when writing large files (copied from one of the webtree modules).
 		$buffer = $this->graphmlHeader ();
 		
 		/*
@@ -655,6 +903,7 @@ class ExportGraphmlModule extends AbstractModule implements
 		foreach ( $rows as $row ) {
 			$record = Individual::getInstance ( $row->xref, $tree );
 			
+			// get parameter for the export
 			$sex = $record->getSex ();
 			if ($sex == "F") {$s = 'female';
 			} elseif ($sex == "M") {$s = 'male';
@@ -665,31 +914,41 @@ class ExportGraphmlModule extends AbstractModule implements
 			$col_border = $parameter ['border_' . $s];
 			$box_width = $parameter ['box_width_' . $s];
 			$border_width = $parameter ['border_width_' . $s];
-			$portrait_fallback = $parameter ['default_portrait_' . $s];
-				
+			$font_size = $parameter ['font_size_' . $s];
+
+			// loop to create the output for the node label
+			// and the node description
 			foreach ( array ("label","description" 
 			) as $a ) {
 				
-				// Fill template in three steps
-				// Replace all tags @..$..@
-				// Check for brackets {...} without replacement and remove these
+				/* replace tags in the template with data 
+				 
+				 Algorithm:
+				 - loop over all template components
+				 - unless no tag with data is found concatenate all strings
+				   and store it in $new_string
+				 - if a tag for which gedcom data exist is found then
+				   remove all brackets {...} in $new_string and add $new_string
+				   and the "tag data" to the string $nodetext[$a]. Then set 
+				   $new_string ="".
+				*/
 				
-				// replace @..$..@
-				
-				// loop over template array
 				$nodetext [$a] = "";
 				$new_string = "";
 				if ($template [$a]) {
+					// loop over all template components
 					foreach ( $template [$a] as $comp ) {
 						if ($comp ["type"] == "string") {
+							// element is a string, add it to $new_string
 							$new_string .= $comp ["component"];
 						} else {
+							// element is a tag, get the tag data
 							$tag_replacement = "";
 							$format = $comp ["format"];
 							switch ($comp ["component"]) {
 								case "GivenName" :
 									$tag_replacement .= $this->getGivenName ( 
-											$record, $format );
+											$record, $format[0] );
 									break;
 								case "SurName" :
 									$tag_replacement .= $record->getAllNames () [$record->getPrimaryName ()] ['surname'];
@@ -699,49 +958,48 @@ class ExportGraphmlModule extends AbstractModule implements
 									break;
 								case "BirthDate" :
 									$tag_replacement .= $this->formatDate ( 
-											$record->getBirthDate (), $format );
+											$record->getBirthDate (), $format[0] );
 									break;
 								case "BirthPlace" :
 									$tag_replacement .= $this->formatPlace ( 
-											$record->getBirthPlace (), $format );
+											$record->getBirthPlace (), $format[0] );
 									break;
 								case "DeathDate" :
 									$tag_replacement .= $this->formatDate ( 
-											$record->getDeathDate (), $format );
+											$record->getDeathDate (), $format[0] );
 									break;
 								case "DeathPlace" :
 									$tag_replacement .= $this->formatPlace ( 
-											$record->getDeathPlace (), $format );
+											$record->getDeathPlace (), $format[0] );
 									break;
 								case "MarriageDate" :
 									$tag_replacement .= $this->formatDate ( 
-											$record->getMarriageDate (), $format );
+											$record->getMarriageDate (), $format[0] );
 									break;
 								case "MarriagePlace" :
 									$tag_replacement .= $this->formatPlace ( 
 											$record->getMarriagePlace (), 
-											$format );
+											$format[0] );
 									break;
 								case "Fact" :
 									$tag_replacement .= $this->getFact ( 
-											$record, $comp ["fact"], $format );
+											$record, $comp ["fact"], $format[0] );
 									break;
 								case "Portrait" :
-									if ($format == "silhouette") {
-										$tag_replacement = $portrait_fallback;
-									} else {
-										$tag_replacement .= $this->getPortrait($record);
-										If ($format == "fallback" && $tag_replacement == "") $tag_replacement = $portrait_fallback;
-									}
+									$tag_replacement .= $this->getPortrait($record,$format[0]);
+									break;
+								case "PortraitSize" :
+									$tag_replacement = $this->getPortraitSize($record, $format);
 									break;
 								case "Gedcom" :
 									$tag_replacement = preg_replace ( "/\\n/", "<br>", $record->getGedcom() );
 									break;
 							}
 							if ($tag_replacement != "") {
+								// data for the tag exists
 								// check for a {...} in $new_string and remove it
-								$new_string = preg_replace ( "/{.*}/", "", 
-										$new_string );
+								$new_string = $this->removeBrackets($new_string );
+								// add $new_string to $nodetext[$a]
 								$nodetext [$a] .= $new_string . $tag_replacement;
 								$new_string = "";
 							}
@@ -749,29 +1007,28 @@ class ExportGraphmlModule extends AbstractModule implements
 					}
 				}
 				
-				$new_string = preg_replace ( "/{.*}/", "", $new_string );
+				// add remaining strings to $nodetext
+				$new_string = $this->removeBrackets($new_string );
 				$nodetext [$a] .= $new_string;
+				// remove all remaining brackets (which contain record data)
 				$nodetext [$a] = preg_replace ( array ("/{/","/}/" 
 				), array ("","" 
 				), $nodetext [$a] );
 				$nodetext [$a] = preg_replace ( "/<html>\s*<\/html>/", "", $nodetext [$a] );
-				
-				// portrait
-				// $nodetext[$a] .= $this->getPortrait($record, in_array("portrait", $data[$a]), $parameter ['image_directory']);
-				// name
-				// $nodetext[$a] .= $this->getIndName($record, in_array("name", $data[$a]), $parameter[$a . "_format_name"]);
 			}
 			
-			// this replacement has to be done for "lable"
-			// for "description" no replacement must be done
+			// the replacement of < and > has to be done for "lable"
+			// for "description" no replacement must be done (not clear why)
 			$nodetext ["label"] = str_replace ( "<", "&lt;", 
 					$nodetext ["label"] );
 			$nodetext ["label"] = str_replace ( ">", "&gt;", 
 					$nodetext ["label"] );
-			
+
+			// count the number of rows to set the box height accordingly
 			$label_rows = count ( explode ( "&lt;br&gt;", $nodetext ["label"] ) ) +
-					 1;
-			// create node
+							count ( explode ( "&lt;tr&gt;", $nodetext ["label"] ) ) + 1;
+
+			// create export for the node 
 			$buffer .= '<node id="' . $row->xref . '">' . "\n" .
 					 '<data key="d1"><![CDATA[http://my.site.com/' . $row->xref .
 					 '.html]]></data>' . "\n" . '<data key="d2"><![CDATA[' .
@@ -782,14 +1039,14 @@ class ExportGraphmlModule extends AbstractModule implements
 					 '" width="' . $box_width . '" x="10" y="10"/> <y:Fill color="' . $col .
 					 '" transparent="false"/> <y:BorderStyle color="' .
 					 $col_border .
-					 '" type="line" width="' . $border_width . '"/> <y:NodeLabel alignment="center" autoSizePolicy="content" hasBackgroundColor="false" hasLineColor="false" textColor="#000000" fontFamily="' . $parameter ['font'] . '" fontSize="12" fontStyle="plain" visible="true" modelName="internal" modelPosition="l" width="129" height="19" x="1" y="1">';
+					 '" type="line" width="' . $border_width . '"/> <y:NodeLabel alignment="center" autoSizePolicy="content" hasBackgroundColor="false" hasLineColor="false" textColor="#000000" fontFamily="' . $parameter ['font'] . '" fontSize="' . $font_size . '" fontStyle="plain" visible="true" modelName="internal" modelPosition="l" width="129" height="19" x="1" y="1">';
 			
-			// no line break befor $nodetext allowed
+			// no line break before $nodetext allowed
 			$buffer .= $nodetext ["label"] . "\n" .
 					 '</y:NodeLabel> </y:GenericNode> </data>' . "\n" .
 					 "</node>\n";
 			
-			// write to file
+			// write to file if buffer is full
 			if (strlen ( $buffer ) > 65536) {
 				fwrite ( $gedout, $buffer );
 				$buffer = '';
@@ -799,12 +1056,23 @@ class ExportGraphmlModule extends AbstractModule implements
 		/*
 		 * Create nodes for families
 		 */
-		// Split templates
+		// First split the html templates
+		// This is done once and later used when exporting
+		// data for the familty tree record.
 		$template ["label"] = $this->splitTemplate ( 
 				$parameter ["families_label_template"] );
 		$template ["description"] = $this->splitTemplate ( 
 				$parameter ["families_description_template"] );
-		// Get all families
+
+		// get parameter for the export
+		$col = $parameter ['color_family'];
+		$node_style = $parameter ['node_style_family'];
+		$col_border = $parameter ['border_family'];
+		$box_width = $parameter ['box_width_family'];
+		$border_width = $parameter ['border_width_family'];
+		$font_size = $parameter ['font_size_family'];
+		
+		// Get all family records
 		$rows = Database::prepare ( 
 				"SELECT f_id AS xref, f_gedcom AS gedcom" .
 						 " FROM `##families` WHERE f_file = :tree_id ORDER BY f_id" )->execute ( 
@@ -815,6 +1083,8 @@ class ExportGraphmlModule extends AbstractModule implements
 		foreach ( $rows as $row ) {
 			$record = Family::getInstance ( $row->xref, $tree );
 			
+			// now replace the tags with record data
+			// the algorithm is the same as for individuals (see above)
 			foreach ( array ("label","description" 
 			) as $a ) {
 				
@@ -831,20 +1101,20 @@ class ExportGraphmlModule extends AbstractModule implements
 								case "Marriage" :
 									$marriage = $record->getMarriage ();
 									if ($marriage) {
-										$tag_replacement .= $format;
+										$tag_replacement .= $format[0];
 									}
 									break;
 								case "MarriageDate" :
 									$tag_replacement .= $this->formatDate ( 
-											$record->getMarriageDate (), $format );
+											$record->getMarriageDate (), $format[0] );
 									break;
 								case "MarriagePlace" :
-									// does not work because no exception handling included
-									// $tag_replacement .= $this->formatPlace($record->getMarriagePlace(), $format);
+									// $record->getMarriagePlace() does not work because 
+									// there is no exception handling in the function
 									$marriage = $record->getMarriage ();
 									if ($marriage) {
 										$tag_replacement .= $this->formatPlace ( 
-												$marriage->getPlace (), $format );
+												$marriage->getPlace (), $format[0] );
 									}
 									break;
 								case "Gedcom" :
@@ -853,37 +1123,38 @@ class ExportGraphmlModule extends AbstractModule implements
 							}
 							if ($tag_replacement != "") {
 								// check for a {...} in $new_string and remove it
-								$new_string = preg_replace ( "/{.*}/", "", 
-										$new_string );
+								$new_string = $this->removeBrackets($new_string );
 								$nodetext [$a] .= $new_string . $tag_replacement;
 								$new_string = "";
 							}
 						}
 					}
 				}
-				$new_string = preg_replace ( "/{.*}/", "", $new_string );
+				
+				// now add a remaining string
+				$new_string = $this->removeBrackets($new_string );
 				$nodetext [$a] .= $new_string;
+				
+				// remove remaining brackets
 				$nodetext [$a] = preg_replace ( array ("/{/","/}/" 
 				), array ("","" 
 				), $nodetext [$a] );
-				$nodetext [$a] = preg_replace ( "/<html>\s*<\/html>/", "", $nodetext [$a] );
+				//$nodetext [$a] = preg_replace ( "/<html>\s*<\/html>/", "", $nodetext [$a] );
 				
-				// $nodetext[$a] = str_replace ( "<", "&lt;", $nodetext[$a] );
-				// $nodetext[$a] = str_replace ( ">", "&gt;", $nodetext[$a] );
 			}
-			// for lable <> must be replaced
+			// for the "lable" < and > must be replaced
+			// for description no replacement is required (not clear why this is the case)
 			$nodetext ["label"] = str_replace ( "<", "&lt;", 
 					$nodetext ["label"] );
 			$nodetext ["label"] = str_replace ( ">", "&gt;", 
 					$nodetext ["label"] );
 			
-			$col = $parameter ['color_family'];
-			$node_style = $parameter ['node_style_family'];
-			$col_border = $parameter ['border_family'];
-			$box_width = $parameter ['box_width_family'];
-			$border_width = $parameter ['border_width_family'];
+			// count the number of rows to scale the box height accordingly
 			$label_rows = count ( explode ( "&lt;br&gt;", $nodetext ["label"] ) ) +
+							count ( explode ( "&lt;tr&gt;", $nodetext ["label"] ) );
 				
+							
+			// write export data
 			$buffer .= '<node id="' . $row->xref . '">' . "\n";
 			
 			$buffer .= '<data key="d1"><![CDATA[http://my.site.com/' . $row->xref .
@@ -892,6 +1163,8 @@ class ExportGraphmlModule extends AbstractModule implements
 					 ']]></data>' . "\n";
 			
 			
+			// if no label text then set visible flag to false
+			// otherwise a box is created
 			if ($nodetext ["label"] == "") {
 				$visible = "false";
 				$border = '<y:BorderStyle hasColor="true" type="line" color="' . $col_border . '" width="' . $border_width . '"/>';
@@ -900,6 +1173,8 @@ class ExportGraphmlModule extends AbstractModule implements
 				$border = '<y:BorderStyle hasColor="false" type="line" width="' . $border_width . '"/>';
 			}
 					
+			// note fill color must be black
+			// otherwise yed does not find the family nodes
 			$buffer .= '<data key="d3"> <y:ShapeNode>' .
 					 '<y:Geometry height="'. 
 					 $box_width . '" width="' .
@@ -907,10 +1182,9 @@ class ExportGraphmlModule extends AbstractModule implements
 					 '<y:Fill color="#000000" color2="#000000" transparent="false"/>';
 			
 			$buffer .=		 $border;
-					 //'<y:BorderStyle hasColor="false" type="line" width="' . $border_width . '"/>' .
 			$buffer .=	'<y:NodeLabel alignment="center" autoSizePolicy="content" ' .
 					 'backgroundColor="' . $col . '" hasLineColor="true" ' . 'lineColor="' . $col_border . '" ' .
-					 'textColor="#000000" fontFamily="' . $parameter ['font'] . '" fontSize="12" ' .
+					 'textColor="#000000" fontFamily="' . $parameter ['font'] . '" fontSize="' . $font_size . '" ' .
 					 'fontStyle="plain" visible="' . $visible . '" modelName="internal" modelPosition="c" ' .
 					 'width="' . $box_width . '" height="' . (12 * $label_rows) . '" x="10" y="10">';
 					
@@ -920,7 +1194,8 @@ class ExportGraphmlModule extends AbstractModule implements
 			$buffer .= '</y:NodeLabel> <y:Shape type="' .
 					 $node_style . '"/>' .
 					 '</y:ShapeNode> </data>' . "\n" . "</node>\n";
-					
+
+			// write data if buffer is full
 			if (strlen ( $buffer ) > 65536) {
 				fwrite ( $gedout, $buffer );
 				$buffer = '';
@@ -930,15 +1205,18 @@ class ExportGraphmlModule extends AbstractModule implements
 		/*
 		 * Create edges from families to individuals
 		 */
+		
 		$no_edge = 0;
+		
 		// loop over families
 		foreach ( $rows as $row ) {
 			$record = Family::getInstance ( $row->xref, $tree );
 			
-			// add parents
+			// get all parents
 			$parents = array ($record->getHusband (),$record->getWife () 
 			);
 			
+			// loop over parents and add edges for parents
 			foreach ( $parents as $parent ) {
 				if ($parent) {
 					$no_edge += 1;
@@ -953,7 +1231,7 @@ class ExportGraphmlModule extends AbstractModule implements
 				}
 			}
 			
-			// now add edges for children
+			// get all children and add edges for children
 			$children = $record->getChildren ();
 			
 			foreach ( $children as $child ) {
@@ -967,14 +1245,14 @@ class ExportGraphmlModule extends AbstractModule implements
 						 "\n" . '</edge>' . "\n";
 			}
 			
-			// $buffer .= self::reformatRecord ( $rec );
+			// write data if buffer is full
 			if (strlen ( $buffer ) > 65536) {
 				fwrite ( $gedout, $buffer );
 				$buffer = '';
 			}
 		}
 		
-		// add footer
+		// add footer and write buffer
 		$buffer .= $this->graphmlFooter ();
 		fwrite ( $gedout, $buffer );
 	}

@@ -1,5 +1,5 @@
 @&<html><table>
-{<td><img src="file:C:/xampp/htdocs/webtrees/data/media/thumbs/@Portrait&fallback@" alt="kein Bild" width="30" height="45"></td>}
+{<td><img src="file:C:/xampp/htdocs/webtrees/data/media/thumbs/@Portrait&fallback@" alt="kein Bild" width="30" height="@PortraitSize&w30&45@"></td>}
 <td><table width="190">
 <br>{@GivenName&1,2,.@ }@SurName@
 <span style="font-size:70%">{<br>*@BirthDate&%Y@ @BirthPlace&1,-1/Deutschland@</br>}
