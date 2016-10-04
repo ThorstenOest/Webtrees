@@ -525,6 +525,23 @@ class ExportGraphmlModule extends AbstractModule implements
 	}
 	
 	/**
+	 * Write date to output file
+	 *
+	 * This module write data to the outfile and takes care 
+	 * of all required transformations.
+	 * 
+	 * @param resource $gedout
+	 *        	Handle to a writable stream        	
+	 * @param string $buffer The string to be written in the file        	
+	 */
+	private function graphml_fwrite($gedout, $buffer) {
+		// replace &nbsp; with " " because it is not known by yed
+		$buffer = preg_replace ( '/&nbsp;/', ' ', $buffer );
+				
+		fwrite ( $gedout, mb_convert_encoding($buffer,'UTF-8'));
+	}
+	
+	/**
 	 * Returns the portrait file name
 	 *
 	 * This module returns the file name of the portrait of an individual.
@@ -612,10 +629,10 @@ class ExportGraphmlModule extends AbstractModule implements
 
 			if ($constraint == "w") {
 				// constraint is the width, get the height
-				$image_length = (int) ($height * $size_constraint / $width);
+				if ($width != 0) $image_length = (int) ($height * $size_constraint / $width);
 			} else {
 				// constraint is the height, get the width
-				$image_length = (int) ($width * $size_constraint / $height);
+				if ($height != 0) $image_length = (int) ($width * $size_constraint / $height);
 			}
 		}
 
@@ -1050,7 +1067,7 @@ class ExportGraphmlModule extends AbstractModule implements
 			
 			// write to file if buffer is full
 			if (strlen ( $buffer ) > 65536) {
-				fwrite ( $gedout, mb_convert_encoding($buffer,'UTF-8'));
+				$this->graphml_fwrite($gedout, $buffer);
 				$buffer = '';
 			}
 		}
@@ -1199,7 +1216,7 @@ class ExportGraphmlModule extends AbstractModule implements
 
 			// write data if buffer is full
 			if (strlen ( $buffer ) > 65536) {
-				fwrite ( $gedout, mb_convert_encoding($buffer,'UTF-8'));
+				$this->graphml_fwrite($gedout, $buffer);
 				$buffer = '';
 			}
 		}
@@ -1249,14 +1266,14 @@ class ExportGraphmlModule extends AbstractModule implements
 			
 			// write data if buffer is full
 			if (strlen ( $buffer ) > 65536) {
-				fwrite ( $gedout, mb_convert_encoding($buffer,'UTF-8'));
+				$this->graphml_fwrite($gedout, $buffer);
 				$buffer = '';
 			}
 		}
 		
 		// add footer and write buffer
 		$buffer .= $this->graphmlFooter ();
-		fwrite ( $gedout, mb_convert_encoding($buffer,'UTF-8'));
+		$this->graphml_fwrite( $gedout, $buffer);
 	}
 }
 
