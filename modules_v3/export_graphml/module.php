@@ -129,6 +129,8 @@ class ExportGraphmlModule extends AbstractModule implements
 						'Content-Disposition: attachment; filename="' .
 								 $download_filename . '"' );
 				$stream = fopen ( 'php://output', 'w' );
+				// Set Byte Order Mark
+				fwrite($stream, pack("CCC",0xef,0xbb,0xbf));
 				$this->exportGraphml ( $WT_TREE, $stream );
 				fclose ( $stream );
 				
@@ -1048,7 +1050,7 @@ class ExportGraphmlModule extends AbstractModule implements
 			
 			// write to file if buffer is full
 			if (strlen ( $buffer ) > 65536) {
-				fwrite ( $gedout, $buffer );
+				fwrite ( $gedout, mb_convert_encoding($buffer,'UTF-8'));
 				$buffer = '';
 			}
 		}
@@ -1197,7 +1199,7 @@ class ExportGraphmlModule extends AbstractModule implements
 
 			// write data if buffer is full
 			if (strlen ( $buffer ) > 65536) {
-				fwrite ( $gedout, $buffer );
+				fwrite ( $gedout, mb_convert_encoding($buffer,'UTF-8'));
 				$buffer = '';
 			}
 		}
@@ -1247,14 +1249,14 @@ class ExportGraphmlModule extends AbstractModule implements
 			
 			// write data if buffer is full
 			if (strlen ( $buffer ) > 65536) {
-				fwrite ( $gedout, $buffer );
+				fwrite ( $gedout, mb_convert_encoding($buffer,'UTF-8'));
 				$buffer = '';
 			}
 		}
 		
 		// add footer and write buffer
 		$buffer .= $this->graphmlFooter ();
-		fwrite ( $gedout, $buffer );
+		fwrite ( $gedout, mb_convert_encoding($buffer,'UTF-8'));
 	}
 }
 
