@@ -535,8 +535,6 @@ class ExportGraphmlModule extends AbstractModule implements
 	 * @param string $buffer The string to be written in the file        	
 	 */
 	private function graphml_fwrite($gedout, $buffer) {
-		// replace &nbsp; with " " because it is not known by yed
-		$buffer = preg_replace ( '/&nbsp;/', ' ', $buffer );
 				
 		fwrite ( $gedout, mb_convert_encoding($buffer,'UTF-8'));
 	}
@@ -866,7 +864,7 @@ class ExportGraphmlModule extends AbstractModule implements
 	 *
 	 * @param string $subject the input string where brackets should be 
 	 * removed.
-	 * @return string The input stinr where brackets are removed.
+	 * @return string The input string where brackets are removed.
 	 */
 	private function removeBrackets($subject) {
 		$count = 1;
@@ -876,6 +874,35 @@ class ExportGraphmlModule extends AbstractModule implements
 			$subject = preg_replace ( "/{[^{}]*}/", "",
 					$subject, -1, $count );
 		}
+		return $subject;
+	}
+	
+	/**
+	 * Remove brackets
+	 * 
+	 * This module removes the following substitutes the following special 
+	 * html characters:
+	 * " -> &quot;
+	 * & -> &amp;
+	 * < -> &lt;
+	 * > -> &gt;
+	 * ' -> &apos;
+	 * &nbsp; -> " "
+	 * 
+	 * @param string $subject the input string where special characters should 
+	 * be substituted.
+	 * @return string The input string with substituted characters
+	 */
+	private function substituteSpecialCharacters($subject) {
+
+		$subject = preg_replace ( '/&nbsp;/', ' ', $subject );
+		
+		$subject = preg_replace ( "/&(?![^ ][^&]*;)/", "&amp;", $subject);
+		$subject = preg_replace ( "/\"/", "&quot;", $subject);
+		$subject = preg_replace ( "/\'/", "&apos;", $subject);
+		$subject = preg_replace ( "/(?<!<br)>/", "&gt;", $subject);
+		$subject = preg_replace ( "/<(?!br>)/", "&lt;", $subject);
+
 		return $subject;
 	}
 	
@@ -1019,7 +1046,7 @@ class ExportGraphmlModule extends AbstractModule implements
 								// check for a {...} in $new_string and remove it
 								$new_string = $this->removeBrackets($new_string );
 								// add $new_string to $nodetext[$a]
-								$nodetext [$a] .= $new_string . $tag_replacement;
+								$nodetext [$a] .= $new_string . $this->substituteSpecialCharacters($tag_replacement);
 								$new_string = "";
 							}
 						}
@@ -1143,7 +1170,7 @@ class ExportGraphmlModule extends AbstractModule implements
 							if ($tag_replacement != "") {
 								// check for a {...} in $new_string and remove it
 								$new_string = $this->removeBrackets($new_string );
-								$nodetext [$a] .= $new_string . $tag_replacement;
+								$nodetext [$a] .= $new_string . $this->substituteSpecialCharacters($tag_replacement);
 								$new_string = "";
 							}
 						}
