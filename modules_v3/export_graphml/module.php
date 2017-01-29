@@ -136,6 +136,43 @@ class ExportGraphmlModule extends AbstractModule implements
 				
 				// exit;
 				break;
+				
+			case 'download_settings' :
+				// download the formula data into a local file
+				// file name is set to the tree name
+				$download_filename = "export_graphml_settings.txt";
+				
+				// Stream the file straight to the browser.
+				header ( 'Content-Type: text/plain; charset=UTF-8' );
+				header ('Content-Disposition: attachment; filename="' .
+								 $download_filename . '"' );
+				$stream = fopen ( 'php://output', 'w' );
+				// Set Byte Order Mark
+				fwrite($stream, pack("CCC",0xef,0xbb,0xbf));
+				
+				// write parameter
+				fwrite($stream, base64_encode( serialize($_GET)));
+				
+				fclose ( $stream );
+				
+				// exit;
+				break;
+				
+			case 'upload_settings' :
+				// upload the formula data into a local file
+				// get temporary file name of the uploaded file on the server
+				$f = $_FILES['uploadedfile']['tmp_name'];
+				// now set the form fields
+				$stream = fopen ( $f, 'r' );
+				$d = fread($stream,filesize($f));
+				$settings = unserialize( base64_decode($d));
+					
+				// update web side with uploaded values
+				$this->setParameter($settings);
+
+				// exit;
+				break;
+				
 			default :
 				http_response_code ( 404 );
 		}
@@ -146,8 +183,9 @@ class ExportGraphmlModule extends AbstractModule implements
 	 * 
 	 * This function generates a form to define the export parameter
 	 * and to trigger the export by submit.
+	 * @param array $settings The setting in the form    	       	
 	 */
-	private function setParameter() {
+	private function setParameter($settings = NULL) {
 		global $controller;
 		
 		// generate a standard page
@@ -156,13 +194,21 @@ class ExportGraphmlModule extends AbstractModule implements
 		
 		$directory = WT_MODULES_DIR . $this->getName();
 		
+		// fillread settings if not passed
+		if (is_null($settings)) {
+			$filename = $directory . "/export_graphml_settings.txt";
+			$myfile = fopen($filename, "r") or die("Unable to open file!");
+			$settings = fread($myfile,filesize($filename));
+			$settings = unserialize(base64_decode($settings));
+		};
+	
 		// header line of the form
 		echo '<div id="reportengine-page">
 		<form name="setupreport" method="get" action="module.php">
-		<input type="hidden" name="mod" value=', $this->getName (), '>
-		<input type="hidden" name="mod_action" value="export">
+		<input type="hidden" name="mod" value=', $this->getName (), '>';
+		// <input type="hidden" name="mod_action" value="export">
 
-		<table class="facts_table width50">
+		echo '<table class="facts_table width50">
 		<tr><td class="topbottombar" colspan="7">', I18N::translate ( 
 				'Export tree in graphml format' ), '</td></tr>';
 		
@@ -181,15 +227,17 @@ class ExportGraphmlModule extends AbstractModule implements
 				echo '<tr><td class="descriptionbox width30 wrap">', 
 				I18N::translate ("Node " . $s2), '</td>';
 
-				$filename = $directory . "/template_" . $s1 . "_" . $s2 . ".xml";
-				$myfile = fopen($filename, "r") or die("Unable to open file!");
-				$s = fread($myfile,filesize($filename));
+				//$filename = $directory . "/template_" . $s1 . "_" . $s2 . ".xml";
+				//$myfile = fopen($filename, "r") or die("Unable to open file!");
+				//$s = fread($myfile,filesize($filename));
+				$name = $s1 . "_" . $s2 . "_template";
+				$s = $settings[$name];
 				$nrow = substr_count($s, "\n") + 1;
 
 				echo '<td class="optionbox" colspan="4">' .
-						'<textarea rows="' . $nrow . '" cols="100" name="' . $s1 . "_" . $s2 . '_template">';
+						'<textarea rows="' . $nrow . '" cols="100" name="' . $name . '">';
 				echo $s;
-				fclose($myfile);
+				//fclose($myfile);
 				echo '</textarea></td></tr>';
 				
 			}
@@ -245,10 +293,21 @@ class ExportGraphmlModule extends AbstractModule implements
 		 * Here the types of the boxes are defined.
 		 */ 
 
+		$choicelist = array("BevelNode2", "Rectangle", "RoundRect","BevelNode","BevelNodeWithShadow",
+				"BevelNode3", "ShinyPlateNode", "ShinyPlateNodeWithShadow", "ShinyPlateNode2",
+				"ShinyPlateNode3");
 		echo '<tr>';
 		foreach(array("male", "female", "unknown") as $s) {
+			$name = "node_style_" . $s;
+			$selected = $settings[$name];
 			echo '<td class="optionbox"  colspan="1">' . 
-					 '<select name="node_style_' . $s .'">' .
+					 '<select name="' . $name .'">';
+			foreach($choicelist as $o) {
+				echo '<option value="' . $o . '"';
+			    if ($selected == $o) echo 'selected';
+			    echo '>' . $o . '</option>';
+			};
+			/**
 					 '<option value="BevelNode2" selected>BevelNode2</option>' .
 					 '<option value="Rectangle">Rectangle</option>' .
 					 '<option value="RoundRect">RoundRect</option>' .
@@ -260,10 +319,24 @@ class ExportGraphmlModule extends AbstractModule implements
 					 '<option value="ShinyPlateNode2">ShinyPlateNode2</option>' .
 					 '<option value="ShinyPlateNode3">ShinyPlateNode3</option>' .
 					 '</select></td>';
+					 **/
+			echo '</select></td>';
 		}
 		
+		$name = "node_style_family";
+		$selected = $settings[$name];
+		$choicelist = array("rectangle","roundrectangle","ellipse","parallelogram",
+				"hexagon","triangle","rectangle3d","octagon3d","diamond","trapezoid",
+				"trapezoid2");
+		
 		echo '<td class="optionbox"  colspan="1">' .
-				 '<select name="node_style_family">' .
+				 '<select name="node_style_family">';
+		foreach($choicelist as $o) {
+				echo '<option value="' . $o . '"';
+			    if ($selected == $o) echo 'selected';
+			    echo '>' . $o . '</option>';
+		};
+		/**
 				 '<option value="rectangle">Rectangle</option>' .
 				 '<option value="roundrectangle">Round Rectangle</option>' .
 				 '<option value="ellipse">Ellipse</option>' .
@@ -275,13 +348,15 @@ class ExportGraphmlModule extends AbstractModule implements
 				 '<option value="diamond" selected>Diamond</option>' .
 				 '<option value="trapezoid">Trapezoid</option>' .
 				 '<option value="trapezoid2">Trapezoid2</option>' .
-				 '</select></td></tr>';
+		**/		 
+		echo '</select></td></tr>';
 		
 		/*
 		 * Box style - Fill color
 		 * 
 		 * Here the fill colors of the boxes are defined.
 		 */ 
+		/**
 		echo '<tr><td class="optionbox" colspan="1">' .  I18N::translate ('Fill color') . 
 				'<input type="color" value="#ccccff" name="color_male"></td>';
 		echo '<td class="optionbox" colspan="1">' .  I18N::translate ('Fill color') . 
@@ -290,6 +365,15 @@ class ExportGraphmlModule extends AbstractModule implements
 				'<input type="color" value="#ffffff" name="color_unknown"></td>';
 		echo '<td class="optionbox" colspan="1">' .  I18N::translate ('Fill color') . 
 				'<input type="color" value="#ffffff" name="color_family"></td></tr>';
+				**/
+		echo '<tr><td class="optionbox" colspan="1">' .  I18N::translate ('Fill color') .
+				'<input type="color" value="' . $settings["color_male"] . '" name="color_male"></td>';
+		echo '<td class="optionbox" colspan="1">' .  I18N::translate ('Fill color') .
+				'<input type="color" value="' . $settings["color_female"] . '" name="color_female"></td>';
+		echo '<td class="optionbox" colspan="1">' .  I18N::translate ('Fill color') .
+				'<input type="color" value="' . $settings["color_unknown"] . '" name="color_unknown"></td>';
+		echo '<td class="optionbox" colspan="1">' .  I18N::translate ('Fill color') .
+				'<input type="color" value="' . $settings["color_family"] . '" name="color_family"></td></tr>';
 		
 		/*
 		 * Box style - Border color
@@ -298,12 +382,14 @@ class ExportGraphmlModule extends AbstractModule implements
 		 */ 
 		echo '<tr>';
 		foreach(array("male", "female", "unknown") as $s) {
+			$name = "border_" . $s; 
 			echo '<td class="optionbox" colspan="1">' .  I18N::translate ('Border color') .
-					'<input type="color" value="#660066" name="border_' . $s . '"></td>';
+					'<input type="color" value="' . $settings[$name] . '" name="' . $name . '"></td>';
 		}
 		foreach(array("family") as $s) {
+			$name = "border_" . $s; 
 			echo '<td class="optionbox" colspan="1">' .  I18N::translate ('Border color') .
-					'<input type="color" value="#c0c0c0" name="border_' . $s . '"></td>';
+					'<input type="color" value="' . $settings[$name] . '" name="' . $name . '"></td>';
 		}		
 		echo '</tr>';
 		
@@ -314,12 +400,14 @@ class ExportGraphmlModule extends AbstractModule implements
 		 */ 
 		echo '<tr>';
 		foreach(array("male", "female", "unknown") as $s) {
+			$name = "box_width_" . $s; 
 			echo '<td class="optionbox" colspan="1">' .  I18N::translate ('Box width') .
-					'<input type="number" value="250" name="box_width_' . $s . '"></td>';
+					'<input type="number" value="' . $settings[$name] . '" name="' . $name . '"></td>';
 		}
+		$name = "box_width_family"; 
 		echo '<td class="optionbox" colspan="1">' . I18N::translate('Symbol') . " " .
 		I18N::translate('width') . "/" . I18N::translate('height') .
-				'<input type="number" value="15" name="box_width_family"></td></tr>';
+				'<input type="number" value="' . $settings[$name] . '" name="' . $name . '"></td></tr>';
 		
 		/*
 		 * Box style - Border line width
@@ -328,8 +416,9 @@ class ExportGraphmlModule extends AbstractModule implements
 		 */ 
 		echo '<tr>';
 		foreach(array("male", "female", "unknown", "family") as $s) {
+			$name = "border_width_" . $s; 
 			echo '<td class="optionbox" colspan="1">' . I18N::translate('Border width') .
-					'<input type="number" value="1.0" step="0.1" name="border_width_' . $s . '"></td>';
+					'<input type="number" value="' . $settings[$name] . '" step="0.1" name="' . $name . '"></td>';
 		}
 		echo '</tr>';
 		
@@ -340,8 +429,9 @@ class ExportGraphmlModule extends AbstractModule implements
 		 */ 
 		echo '<tr>';
 		foreach(array("male", "female", "unknown", "family") as $s) {
+			$name = "font_size_" . $s; 
 			echo '<td class="optionbox" colspan="1">' . I18N::translate('Font size') .
-					'<input type="number" value="10" step="1" name="font_size_' . $s . '"></td>';
+					'<input type="number" value="' . $settings[$name] . '" step="1" name="' . $name . '"></td>';
 		}
 		echo '</tr>';
 		
@@ -353,8 +443,9 @@ class ExportGraphmlModule extends AbstractModule implements
 		echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate ( 
 				'Default portrait' ), '</td>';
 		foreach(array("male", "female", "unknown") as $s) {
+			$name = "default_portrait_" . $s; 
 			echo '<td class="optionbox" colspan="1">
-					<input type="text" size="30" value="silhouette_' . $s . '_small.png" name="default_portrait_' . $s . '"></td>';
+					<input type="text" size="30" value="' . $settings[$name] . '" name="' . $name . '"></td>';
 		}
 		
 		echo '<td class="optionbox" colspan="1"/></tr>';
@@ -364,15 +455,27 @@ class ExportGraphmlModule extends AbstractModule implements
 		 * 
 		 * Here the font type is defined.
 		 */ 
+		$name = "font";
+		$selected = $settings[$name];
+		$choicelist = array("Times New Roman","Dialog","Franklin Gothic Book","Bookman Old Style",
+				"Lucida Handwriting",);
+		
 		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate ( 
 				'Font' ), '</td><td class="optionbox" colspan="4">' .
-				 '<select name="font">' .
+				 '<select name="font">';
+		foreach($choicelist as $o) {
+			echo '<option value="' . $o . '"';
+			if ($selected == $o) echo 'selected';
+			echo '>' . $o . '</option>';
+		};
+				 /**	
 				 '<option value="Times New Roman" selected>Times New Roman</option>' .
 				 '<option value="Dialog">Dialog</option>' .
 				 '<option value="Franklin Gothic Book">Franklin Gothic Book</option>' .
 				 '<option value="Bookman Old Style">Bookman Old Style</option>' .
 				 '<option value="Lucida Handwriting">Lucida Handwriting</option>' .
-				 '</select></td></tr>';
+				 **/
+		echo '</select></td></tr>';
 						
 		/*
 		 * Edge line width
@@ -381,12 +484,58 @@ class ExportGraphmlModule extends AbstractModule implements
 		 */ 
 		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate ( 
 				'Line width of edge' ), '</td><td class="optionbox" colspan="4">
-			<input type="number" value="1.0" step="0.1" name="edge_line_width" min="1" max="7"></td></tr>';
+			<input type="number" value="' . $settings["edge_line_width"] . '" step="0.1" name="edge_line_width" min="1" max="7"></td></tr>';
 				
-		// Submit button
-		echo '<tr><td class="topbottombar" colspan="6">', '<button>', I18N::translate ( 
-				'Export' ), '</td></tr>
-		</table></form></div>';
+		// Submit button<
+		echo '<tr><td class="topbottombar" colspan="6">', '<button name="mod_action" value="export">', I18N::translate ( 
+				'Export Family Tree' ), '</button>', 
+						'</td></tr>';
+		//echo '</form>';
+		
+		// download settings
+		//echo '<form name="download" method="get" action="module.php">
+		//<input type="hidden" name="mod" value=', $this->getName (), '>';
+		// <input type="hidden" name="mod_action" value="export">
+		echo '<tr><td class="topbottombar" colspan="6">',
+			'<button name="mod_action" value="download_settings">', I18N::translate (
+				'Download Settings' ), '</button></td></tr>';
+		echo '</table></form>';
+		//echo '</table></form>';
+		
+		//echo '</div>';
+		
+		// upload settings
+		//echo '<div id="reportengine-page">';
+		echo '<table class="facts_table width50">';		
+		echo '<tr><td class="descriptionbox width30 wrap" colspan="5">', I18N::translate (
+					'Upload/Download Settings'), '</td></tr>';
+		// header line of the form
+		echo '<form name="upload" enctype="multipart/form-data" method="POST" 
+				action="module.php?mod=' . $this->getName () . 
+				'&mod_action=upload_settings">';
+		//<input type="hidden" name="mod" value=', $this->getName (), '>';
+		
+		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate (
+				'Read' ), '</td><td class="optionbox" colspan="4">',
+			'<input name="uploadedfile" type="file"/>',
+			'<button type="submit" value="upload_settings">', I18N::translate ( 
+				'Upload Settings' ), '</button></td></tr>';
+		echo '</table></form>';
+		
+		/**
+		// download settings
+		echo '<form name="download" method="get" action="module.php">
+		<input type="hidden" name="mod" value=', $this->getName (), '>';
+		// <input type="hidden" name="mod_action" value="export">
+		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate (
+				'Write' ),
+			'<td class="optionbox" colspan="4">',
+			'<button name="mod_action" value="download_settings">', I18N::translate (
+				'Download Settings' ), '</button></td></tr>';
+		echo '</table></form>';
+		**/
+		echo '</div>';
+		
 	}
 	
 	/**
