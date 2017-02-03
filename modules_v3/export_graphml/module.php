@@ -267,6 +267,7 @@ class ExportGraphmlModule extends AbstractModule implements
 				 '<tr><td>FactXXXX<td>' . I18N::translate('position in the ordered fact list') . '</td><td>@FactOCCU&1,2,-1@</td></tr>' .
 				 '<tr><td>Portrait<td>"fallback"' .  I18N::translate('or') . '"silhouette"</td><td>@Portrai&fallback@</td></tr>' .
 				 '<tr><td>Gedcom<td>-</td><td>@Gedcom@</td></tr>' .
+				 '<tr><td>Remove<td>' .  I18N::translate('String to be removed') . '</td><td>@Remove&";","."@</td></tr>' .
 				 '</table></td>';
 		
 		/*
@@ -1027,9 +1028,9 @@ class ExportGraphmlModule extends AbstractModule implements
 	}
 	
 	/**
-	 * Remove brackets
+	 * Substitute characters
 	 * 
-	 * This module removes the following substitutes the following special 
+	 * This module substitutes the following special 
 	 * html characters:
 	 * " -> &quot;
 	 * & -> &amp;
@@ -1188,6 +1189,13 @@ class ExportGraphmlModule extends AbstractModule implements
 									break;
 								case "Gedcom" :
 									$tag_replacement = preg_replace ( "/\\n/", "<br>", $record->getGedcom() );
+									break;
+								case "Remove" :
+									if ($new_string != "") {										
+										$new_string = rtrim($new_string ,$format[0]);
+									} else {
+										$nodetext[$a] = rtrim($nodetext [$a] ,$format[0]);
+									}
 									break;
 							}
 							if ($tag_replacement != "") {
