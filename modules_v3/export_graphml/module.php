@@ -1050,7 +1050,7 @@ class ExportGraphmlModule extends AbstractModule implements
 		$subject = preg_replace ( "/&(?![^ ][^&]*;)/", "&amp;", $subject);
 		$subject = preg_replace ( "/\"/", "&quot;", $subject);
 		$subject = preg_replace ( "/\'/", "&apos;", $subject);
-		$subject = preg_replace ( "/(?<!<br)>/", "&gt;", $subject);
+		$subject = preg_replace ( "/(?<!br)>/", "&gt;", $subject);
 		$subject = preg_replace ( "/<(?!br>)/", "&lt;", $subject);
 
 		return $subject;
@@ -1190,21 +1190,18 @@ class ExportGraphmlModule extends AbstractModule implements
 								case "Gedcom" :
 									$tag_replacement = preg_replace ( "/\\n/", "<br>", $record->getGedcom() );
 									break;
-								case "Remove" :
-									if ($new_string != "") {										
-										$new_string = rtrim($new_string ,$format[0]);
-									} else {
-										$nodetext[$a] = rtrim($nodetext [$a] ,$format[0]);
-									}
-									break;
 							}
-							if ($tag_replacement != "") {
+							if ($tag_replacement != "" or $comp ["component"] == "Remove") {
 								// data for the tag exists
 								// check for a {...} in $new_string and remove it
 								$new_string = $this->removeBrackets($new_string );
 								// add $new_string to $nodetext[$a]
 								$nodetext [$a] .= $new_string . $this->substituteSpecialCharacters($tag_replacement);
 								$new_string = "";
+							}
+							if ($comp ["component"] == "Remove") {
+								// remove string 
+								$nodetext[$a] = preg_replace ( "/\Q" . $format[0] . "\E(?=[\}\s]*$)/", "", $nodetext[$a]);
 							}
 						}
 					}
