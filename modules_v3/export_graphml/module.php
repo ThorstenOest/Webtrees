@@ -1045,9 +1045,10 @@ class ExportGraphmlModule extends AbstractModule implements
 	 */
 	private function substituteSpecialCharacters($subject) {
 
-		$subject = preg_replace ( '/&nbsp;/', ' ', $subject );
+		//$subject = preg_replace ( '/&nbsp;/', ' ', $subject );
 		
-		$subject = preg_replace ( "/&(?![^ ][^&]*;)/", "&amp;", $subject);
+		$subject = preg_replace ( "/&/", "&amp;", $subject);
+		//$subject = preg_replace ( "/&(?![^ ][^&]*;)/", "&amp;", $subject);
 		$subject = preg_replace ( "/\"/", "&quot;", $subject);
 		$subject = preg_replace ( "/\'/", "&apos;", $subject);
 		$subject = preg_replace ( "/(?<!br)>/", "&gt;", $subject);
@@ -1136,7 +1137,7 @@ class ExportGraphmlModule extends AbstractModule implements
 					foreach ( $template [$a] as $comp ) {
 						if ($comp ["type"] == "string") {
 							// element is a string, add it to $new_string
-							$new_string .= $comp ["component"];
+							$new_string .= $this->substituteSpecialCharacters($comp ["component"]);
 						} else {
 							// element is a tag, get the tag data
 							$tag_replacement = "";
@@ -1190,8 +1191,17 @@ class ExportGraphmlModule extends AbstractModule implements
 								case "Gedcom" :
 									$tag_replacement = preg_replace ( "/\\n/", "<br>", $record->getGedcom() );
 									break;
+								case "Remove" :
+									if ($new_string != "") {
+										$new_string = $this->removeBrackets($new_string );
+										$new_string = preg_replace ( "/\Q" . $format[0] . "\E(?=[\}\s]*$)/", "", $new_string);
+									} else {
+										$nodetext[$a] = preg_replace ( "/\Q" . $format[0] . "\E(?=[\}\s]*$)/", "", $nodetext[$a]);
+									}
+									break;
 							}
-							if ($tag_replacement != "" or $comp ["component"] == "Remove") {
+							//if ($tag_replacement != "" or $comp ["component"] == "Remove") {
+							if ($tag_replacement != "") {
 								// data for the tag exists
 								// check for a {...} in $new_string and remove it
 								$new_string = $this->removeBrackets($new_string );
@@ -1199,10 +1209,10 @@ class ExportGraphmlModule extends AbstractModule implements
 								$nodetext [$a] .= $new_string . $this->substituteSpecialCharacters($tag_replacement);
 								$new_string = "";
 							}
-							if ($comp ["component"] == "Remove") {
+							/**if ($comp ["component"] == "Remove") {
 								// remove string 
 								$nodetext[$a] = preg_replace ( "/\Q" . $format[0] . "\E(?=[\}\s]*$)/", "", $nodetext[$a]);
-							}
+							}**/
 						}
 					}
 				}
