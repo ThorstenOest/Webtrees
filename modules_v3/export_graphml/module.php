@@ -24,6 +24,9 @@ use Fisharebest\Webtrees\Tree;
 use Fisharebest\Webtrees\Individual;
 use Fisharebest\Webtrees\Family;
 use Fisharebest\Webtrees\Date;
+use Fisharebest\Webtrees\Media;
+use Fisharebest\Webtrees\GedcomTag;
+use Fisharebest\Webtrees\GedcomRecord;
 use Fisharebest\Webtrees\Functions\Functions;
 use Symfony\Component\Finder\Tests\FakeAdapter\NamedAdapter;
 use Symfony\Component\Finder\Iterator\FilenameFilterIterator;
@@ -237,13 +240,14 @@ class ExportGraphmlModule extends AbstractModule implements
 				array('GivenName',
 						'',
 						I18N::translate ( 'position list of given names' ) . ', \'.\' ' .
-						I18N::translate ( 'for abbreviation' ),
+						I18N::translate ( 'for abbreviation'),
 						'@GivenName&1,2,3.@'),
 				array('SurName','', '-', '@SurName@'),
-				array('BirthDate, DeathDate', '',
+				array('NickName','', '-', '@NickName@'),
+				array('BirthDate, DeathDate, FeFactDate', '',
 						I18N::translate ( 'PHP date format specification' ),
 						'@DeathDate&%j.%n.%Y@'),
-				array('BirthPlace, DeathPlace', '',
+				array('BirthPlace, DeathPlace, FeFactPlace', '',
 						I18N::translate ('list of positions, exclusion followed after' ) . ' /',
 						'@DeathPlace&2,3/USA@'),
 				array('FactXXXX', '',
@@ -259,9 +263,35 @@ class ExportGraphmlModule extends AbstractModule implements
 				array('ForeachXXXX', 
 						I18N::translate ('Foreach loop with XXXX=FAMS, Children' ),
 						'-', '@ForeachFAMS@'),
-				array('ForeachFact', 
-						I18N::translate ('Foreach loop over facts' ),
-						I18N::translate ('Comma separated list of facts'), '@ForeachFact&OCCU,EDUC@'),
+				array('ForeachFactOuter', 
+						I18N::translate ('Foreach loop over fact types given as format' ),
+						I18N::translate ('Comma separated list of facts'), '@ForeachFactOuter&OCCU,EDUC@'),
+				array('ForeachFactInner', 
+						I18N::translate ('Foreach loop over facts within in ForeachFactOuter loop' ),
+						'-', '@ForeachFactInner@'),
+				array('FeFactType', 
+						I18N::translate ('Returns the fact type within a ForeachFactOuter loop' ),
+						'- or IfExists (nothing is returned if no facts exists)', '@FeFactType@'),
+				array('FeFactValue', 
+						I18N::translate ('Returns the fact value within a ForeachFactInner loop' ),
+						'-', '@FeFactValue@'),
+				array('ForeachMedia', 
+						I18N::translate ('Foreach loop over media object' ),
+						'1. Comma separated list of types 2. Comma separated list of formats', 
+						'@ForeachMedia&photo&jpg,png@'),
+				array('FeMediaFile', 
+						I18N::translate ('Returns the media file name within a ForeachMedia loop' ),
+						'NoExtension if extension should be removed', '@FeMediaFile&NoExtension@'),
+				array('FeMediaCaption', 
+						I18N::translate ('Returns the media title within a ForeachMedia loop' ),
+						'-', '@FeMediaCaption@'),
+				array('ForeachReference', 
+						I18N::translate ('Foreach loop over references' ),
+						'-', 
+						'@ForeachReferences@'),
+				array('FeReferenceName', 
+						I18N::translate ('Returns the reference id within a ForeachReference loop' ),
+						'-', '@FeReferenceName@'),
 				array('Counter', 
 						I18N::translate ('Counter in foreach loop' ),
 						'-', '@Counter@')
@@ -371,7 +401,6 @@ class ExportGraphmlModule extends AbstractModule implements
 		echo '<div id="reportengine-page">
 		<form name="setupreport" method="get" action="module.php">
 		<input type="hidden" name="mod" value=', $this->getName (), '>';
-		// <input type="hidden" name="mod_action" value="export">
 		
 		
 		echo '<table class="facts_table width50">
@@ -802,8 +831,25 @@ class ExportGraphmlModule extends AbstractModule implements
 				"Preamble" ), '</td>';
 		
 		$name = "preamble";
-		$s = (array_key_exists ( $name, $settings ) ? $settings [$name] : "");
+		$s = (array_key_exists ( $name, $settings ) ? $settings [$name] : "");		
+		$nrow = min(10,substr_count ( $s, "\n" ) + 1);
 		
+		echo '<td class="optionbox" colspan="4">' . '<textarea rows="' . $nrow .
+				 '" cols="100" name="' . $name . '">';
+		echo $s;
+		echo '</textarea></td></tr>';
+		
+		/*
+		 * document title
+		 */
+		echo '<tr><td class="descriptionbox width30 wrap" colspan="5">', I18N::translate ( 
+				'Document Title' ), '</td></tr>';
+		
+		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate ( 
+				"Title" ), '</td>';
+		
+		$name = "title";
+		$s = (array_key_exists ( $name, $settings ) ? $settings [$name] : "");
 		$nrow = min(10,substr_count ( $s, "\n" ) + 1);
 		
 		echo '<td class="optionbox" colspan="4">' . '<textarea rows="' . $nrow .
@@ -872,22 +918,28 @@ class ExportGraphmlModule extends AbstractModule implements
 		echo '</textarea></td></tr>';
 		
 		/*
-		 * Box style header
+		 * default format for dates and places
 		 *
-		 * This is the header line for the block which defines the box styles.
-		 * Different box styles can be defines for
-		 * individuals (male, femal, unknown sex) and families.
 		 */
-		echo '<tr><td class="descriptionbox width30 wrap" rowspan="7">', I18N::translate ( 
-				'Box style' ), '</td>';
-		echo '<td class="descriptionbox width30 wrap"  colspan="1">', I18N::translate ( 
-				'Male' ), '</td>';
-		echo '<td class="descriptionbox width30 wrap"  colspan="1">', I18N::translate ( 
-				'Female' ), '</td>';
-		echo '<td class="descriptionbox width30 wrap"  colspan="1">', I18N::translate ( 
-				'Unknown sex' ), '</td>';
-		echo '<td class="descriptionbox width30 wrap"  colspan="1">', I18N::translate ( 
-				'Family' ), '</td></tr>';
+		echo '<tr><td class="descriptionbox width30 wrap" colspan="5">', I18N::translate (
+				'Default formats' ), '</td></tr>';
+		
+		foreach ( array ("date","place" 
+		) as $s ) {
+			echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate (
+				'Default ' . $s . ' format' ), '</td>';
+
+			$name = 'default_' . $s . '_format';
+			echo '<td class="optionbox" colspan="1">
+				<input type="text" size="30" value="' .
+				(array_key_exists ( $name, $settings ) ? $settings [$name] : "") .
+			 	'" name="' . $name . '"></td></tr>';
+		}
+
+		
+		//echo '<td class="optionbox" colspan="1"/></tr>';
+		
+		
 		
 		// Submit button<
 		echo '<tr><td class="topbottombar" colspan="6">', '<button name="mod_action" value="export_latex">', I18N::translate ( 
@@ -944,11 +996,12 @@ class ExportGraphmlModule extends AbstractModule implements
 	 */
 	public static function getGivenName($record, $format = "") {
 		// first get the given name
+
 		$tmp = $record->getAllNames ();
 		$givn = $tmp [$record->getPrimaryName ()] ['givn'];
 		
 		// if $format is given then apply the format
-		if ($givn && $format) {
+		if ($givn and $format) {
 			$exp_givn = explode ( ' ', $givn );
 			$count_givn = count ( $exp_givn );
 			
@@ -962,8 +1015,8 @@ class ExportGraphmlModule extends AbstractModule implements
 				if (in_array ( $s, $exp_format )) {
 					// given name to be included
 					$givn .= " " . $exp_givn [$i];
-				} elseif (in_array ( ".", $exp_format ) ||
-						 in_array ( $i . ".", $exp_format )) {
+				} elseif (in_array ( ".", $exp_format, true ) or
+						 in_array ( ($i . '.'), $exp_format, true )) {
 					// - if "." is included in the format list then all parts of the name
 					// are included abbreviated
 					// - a given name is also included abbreviated if the positions is
@@ -972,6 +1025,9 @@ class ExportGraphmlModule extends AbstractModule implements
 				}
 			}
 		}
+		
+		
+		
 		
 		// now replace unknown names with three dots
 		$givn = str_replace ( array ('@P.N.','@N.N.' 
@@ -1005,11 +1061,16 @@ class ExportGraphmlModule extends AbstractModule implements
 	private function formatPlace($place, $format) {
 		$place_ret = "";
 		// get the name of the place object
-		if (is_object ( $place ) &&
+		if (is_object ( $place ) and
 				 get_class ( $place ) == "Fisharebest\Webtrees\Place") {
 			$place = $place->getGedcomName ();
 		}
 		if ($place) {
+			// check if default format to be used
+			if (!$format and array_key_exists("default_place_format",$_GET)) {
+				$format = $_GET["default_place_format"];
+			}
+			
 			if (! $format) {
 				// use full place name if $format is not given
 				$place_ret .= $place;
@@ -1060,6 +1121,11 @@ class ExportGraphmlModule extends AbstractModule implements
 	 */
 	private function formatDate($date, $format) {
 		if ($date instanceof Date) {
+			// check if default format to be used
+			if (!$format and array_key_exists("default_date_format",$_GET)) {
+				$format = $_GET["default_date_format"];
+			}
+				
 			$date_label = strip_tags ( $date->display ( false, $format ) );
 		} else {
 			$date_label = "";
@@ -1275,6 +1341,40 @@ class ExportGraphmlModule extends AbstractModule implements
 	}
 	
 	/**
+	 * Increases the time limit
+	 *
+	 * This module estimates the processing time and 
+	 * increases the php time limit accordingly 
+	 *
+	 * @return Boolean
+	 */
+	//static $time_counter = 0;
+	//static $time_start = microtime(true);
+	
+	private function increaseTimeLimit() {
+		//global  $time_counter, $time_start;
+		static $time_counter = 0;
+		static $time_start;
+		
+		//if (empty($counter)) $counter = 0;
+		if (empty($time_start)) $time_start = microtime(true);
+		
+		$time_counter++;
+		if ($time_counter == 500) {
+			$time_med = (microtime(true) - $time_start) * 1000;
+			
+			set_time_limit (intval( $time_med) );
+			
+			$time_counter = 0;
+			$time_start = microtime(true);
+			
+			return true;
+		}
+		return false;
+		
+	}
+	
+	/**
 	 * Return the footer for the graphml file
 	 *
 	 * This module returns the footer of the graphml file
@@ -1320,7 +1420,7 @@ class ExportGraphmlModule extends AbstractModule implements
 			// start with an "{" to remove everything if no data are found
 			$template_array = array (
 					array ("component" => $bracket_array [0],"type" => 'string',
-							"format" => "","fact" => "" 
+							"format" => "","fact" => "", "subtemplate" => "" 
 					) 
 			);
 			
@@ -1343,7 +1443,7 @@ class ExportGraphmlModule extends AbstractModule implements
 								"component" => $this->removeBrackets ( 
 										substr ( $template, $pos_end + 1 ), 
 										$bracket_array ),"type" => "string",
-								"format" => "","fact" => "" 
+								"format" => "","fact" => "", "subtemplate" => ""
 						);
 						$i ++;
 					}
@@ -1359,7 +1459,7 @@ class ExportGraphmlModule extends AbstractModule implements
 										substr ( $template, $pos_end + 1, 
 												$pos - $pos_end - 1 ), 
 										$bracket_array ),"type" => "string",
-								"format" => "","fact" => "" 
+								"format" => "","fact" => "", "subtemplate" => ""
 						);
 						$i ++;
 					}
@@ -1380,8 +1480,6 @@ class ExportGraphmlModule extends AbstractModule implements
 						$format_array = array ("");
 						$pos_format = $pos_end;
 					}
-					$component_foreach = substr ( $template, $pos + 8,
-							$pos_format - $pos - 8 );
 					$component = substr ($template,
 							$pos + 1, $pos_format - $pos - 1);
 						
@@ -1396,10 +1494,7 @@ class ExportGraphmlModule extends AbstractModule implements
 							$count_foreach = 1;
 								
 							do  {
-								if (!$pos_foreach){
-									// stop if no furter foreach
-									$pos_EndForeach = $pos_fend;
-								} elseif ($pos_foreach > $pos_fend){
+								if (!$pos_foreach or $pos_foreach > $pos_fend){
 									// EndForeach is next
 									$count_foreach -= 1;
 									if ($count_foreach == 0) {
@@ -1416,22 +1511,19 @@ class ExportGraphmlModule extends AbstractModule implements
 								}
 							} while(is_null($pos_EndForeach)); 
 								
-							//if ($matchfound) {
 							if (!is_null($pos_EndForeach)) {
-								//$pos_EndForeach = $matches [0] [1];
 								$subTemplate = substr ( $template, 0, 4 ) .
 										 substr ( $template, $pos_end + 1, 
 												$pos_EndForeach - $pos_end - 1 );
 								// add the tag to the return array
 								$subTemplateSplit = $this->splitTemplate ( 
 										$subTemplate );
-								//$component = substr ( $template, $pos + 8, 
-								//		$pos_end - $pos - 8 );
 								$template_array [$i] = array (
-										"component" => $component_foreach,
+										"component" => $component,
 										"type" => "foreach", 
 										"format" => $format_array,
-										"fact" => $subTemplateSplit
+										"fact" => "",
+										"subtemplate" => $subTemplateSplit
 								);
 								// set position end to the end of @EndForeach@
 								$pos_end = $pos_EndForeach + 11;
@@ -1445,36 +1537,10 @@ class ExportGraphmlModule extends AbstractModule implements
 									"component" => $component,
 									"type" => "tag",
 									"format" => $format_array,
-									"fact" => ""
+									"fact" => "",
+									"subtemplate" => ""
 							);
-							$i ++;
-								
-							/*
-							if ($pos_format < $pos_end && $pos_format !== false) {
-								// a format definition exists, split it
-								$format_array = explode ( $format, 
-										substr ( $template, $pos_format + 1, 
-												$pos_end - $pos_format - 1 ) );
-								// add the tag to the return array
-								$template_array [$i] = array (
-										"component" => substr ( $template, 
-												$pos + 1, $pos_format - $pos - 1 ),
-										"type" => "tag",
-										"format" => $format_array,"fact" => "" 
-								);
-								$i ++;
-							} else {
-								// there is no format definition
-								// add the tag to the return array
-								$template_array [$i] = array (
-										"component" => substr ( $template, 
-												$pos + 1, $pos_end - $pos - 1 ),
-										"type" => "tag",
-										"format" => array ("" 
-										),"fact" => "" 
-								);
-								$i ++;
-							}*/
+							$i ++;								
 						}
 					}
 				}
@@ -1482,7 +1548,7 @@ class ExportGraphmlModule extends AbstractModule implements
 			
 			// end with an "}" matching the "{" at the beginning
 			$template_array [$i] = array ("component" => $bracket_array [1],
-					"type" => 'string',"format" => '',"fact" => '' 
+					"type" => 'string',"format" => '',"fact" => '', "subtemplate" => "" 
 			);
 			
 			// now search for tags defining facts and filling the
@@ -1550,12 +1616,12 @@ class ExportGraphmlModule extends AbstractModule implements
 	 *        	List of symbols to the used for facts
 	 * @param integer $counter
 	 *        	Counter of foreach loop
-	 * @param string $FactType
+	 * @param string $fact_type
 	 *        	Fact type within a foreach fact loop
 	 * @return string The template with place holders replaced
 	 */
 	private function substitutePlaceHolder($record, $record_context, $template, $doctype, 
-			$brackets = array("{","}"), $fact_symbols = array(), $counter = 0) {
+			$brackets = array("{","}"), $fact_symbols = array(), $counter = 0, $fact_type = "") {
 		global $generationFam, $generationInd;
 		//$xref = $record->getXref();
 		//if (!empty($xref) and $xref[0] == "I") {
@@ -1574,8 +1640,8 @@ class ExportGraphmlModule extends AbstractModule implements
 		 * and the "tag data" to the string $nodetext[$a]. Then set
 		 * $new_string ="".
 		 */
-		$nodetext = "";
-		$new_string = "";
+		$nodetext = '';
+		$new_string = '';
 		if ($template) {
 			// loop over all template components
 			foreach ( $template as $comp ) {
@@ -1651,6 +1717,13 @@ class ExportGraphmlModule extends AbstractModule implements
 								
 							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
 							break;
+						case "NickName" :
+							$rec_name = $record->getFacts ("NAME", true)[0];
+							$nickname = $rec_name->getAttribute("NICK");
+							if ($nickname) {
+								$tag_replacement .= $this->substituteSpecialCharacters($nickname, $doctype );
+							}
+							break;
 						case "Id" :
 						case "FatherId" :
 						case "MotherId" :
@@ -1713,19 +1786,80 @@ class ExportGraphmlModule extends AbstractModule implements
 									$comp ["fact"], $format [0] );
 							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
 							break;
+						case "FeAttributeType" :
 						case "FeFactType" :
-							$FactTag = $record->getTag();
-							if (!empty($fact_symbols) and array_key_exists($FactTag, $fact_symbols)) {
-								$tag_replacement .= $fact_symbols[$FactTag];
-							} else {
-								$tag_replacement .= $this->substituteSpecialCharacters(
-										$record->getLabel(), $doctype );
+							$return_value = TRUE;
+							if ($format[0] == "IfExist" and  get_class ( $record ) != "Fisharebest\Webtrees\Fact") {
+								$fact_records = $record->getFacts ( $fact_type, true );
+								if (empty($fact_records)) {
+									$return_value = FALSE;
+								}
+							}
+							if ($return_value) {
+								if (!empty($fact_symbols) and array_key_exists($fact_type, $fact_symbols)) {
+									$tag_replacement .= $fact_symbols[$fact_type];
+								} else {
+									$tag_replacement .= $this->substituteSpecialCharacters(
+											GedcomTag::getLabel($fact_type, $record_context)
+											, $doctype );
+									$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
+								}
+								$new_string .= $tag_replacement;
+								$tag_replacement = '';
 							}
 							break;
 						case "FeFactValue" :
 							$tag_replacement .= $record->getValue();
 							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
 							break;
+						case "FeFactDate" :
+							$tag_replacement .= $this->formatDate ( $record->getDate(),$format [0]) ;
+							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
+							break;
+						case "FeFactPlace" :
+							$tag_replacement .= $this->formatPlace ( $record->getPlace(),$format [0]);
+							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
+							break;	
+						case "FeFactAttribute" :
+							if ($fact_type == 'DATE') {
+								$tag_replacement .= $this->formatDate ( $record->getDate(),$format [0]) ;
+							} else if ($fact_type == 'PLAC') {
+								$tag_replacement .= $this->formatPlace ( $record->getPlace(),$format [0]);
+							} else {
+								$tag_replacement .= $record->getAttribute($fact_type);
+							}
+							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
+							break;	
+						case "FeFactNote" :
+							$notes = $record->getNotes();
+							foreach ($notes as $n) {
+								$tag_replacement .= $this->substituteSpecialCharacters($n, $doctype ) . '\\ ';
+							}
+							break;	
+						case "FeMediaFile" :
+							$filename = $record->getFilename();
+							$filename_array = explode(".",$record->getFilename());
+							$n = count($filename_array);
+							if ($n == 1) {
+								// file name has no ending stop code
+								exit ('Image name \'' . $filename . "\' does not have an ending" );
+							} else if ($format[0] == "NoExtension") {
+								// return file name without ending	 
+									$tag_replacement .= implode(array_slice($filename_array,0,$n-1));
+							} else {
+								// return full file name
+								$tag_replacement .= $filename;
+							} 
+							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
+							break;	
+						case "FeMediaCaption" :
+							$tag_replacement .= $record->getTitle();
+							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
+							break;	
+						case "FeReferenceName" :
+							$tag_replacement .= str_replace('@', '',str_replace('S', '', $record));
+							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
+							break;	
 						case "Portrait" :
 							$tag_replacement .= $this->getPortrait ( $record, 
 									$format [0] );
@@ -1765,18 +1899,27 @@ class ExportGraphmlModule extends AbstractModule implements
 							}
 							break;
 						case "Remove" :
-							if ($new_string != "") {
+							$search_array = array();
+							$replace_array = array();
+							foreach ($format as $f) {
+								$search_array[] = "/\Q" . $f . '\E(?=[\\r\\n\\' .$brackets [0] . '\\' . $brackets [1] . '\s]*$)/';
+								$replace_array[] = '';
+							};
+							if (str_replace(array("\n"," "),"",$new_string) != '') {
 								$new_string = $this->removeBrackets ( 
 										$new_string, $brackets );
-								$new_string = preg_replace ( 
-										"/\Q" . $format [0] . '\E(?=[\\' .
-												 $brackets [0] . '\s]*$)/', "", 
-												$new_string );
+								do {
+									$old_length = strlen($new_string);
+									$new_string = preg_replace ( $search_array, $replace_array, $new_string );
+									$new_length = strlen($new_string);
+								} while($old_length !=  $new_length);
+								
 							} else {
-								$nodetext = preg_replace ( 
-										"/\Q" . $format [0] . '\E(?=[\\' .
-												 $brackets [0] . '\s]*$)/', "", 
-												$nodetext );
+								do {
+									$old_length = strlen($nodetext);
+									$nodetext = preg_replace ( $search_array, $replace_array, $nodetext );
+									$new_length = strlen($nodetext);
+								} while($old_length !=  $new_length);
 							}
 							break;
 							
@@ -1787,42 +1930,123 @@ class ExportGraphmlModule extends AbstractModule implements
 					
 					$counter = 0;
 					switch ($comp ["component"]) {
-						case "FAMS" :
+						case "ForeachFAMS" :
 							// loop over all spouse families of an individual
 							$FAMS = $record->getSpouseFamilies ();
 							foreach ( $FAMS as $family ) {
 								$counter += 1;
-								$tag_replacement .= $this->substitutePlaceHolder($family, $record, $comp ["fact"][0], $doctype, $comp ["fact"][1], array(), $counter);
+								$tag_replacement .= $this->substitutePlaceHolder($family, $record, $comp ["subtemplate"][0], $doctype, $comp ["subtemplate"][1], array(), $counter);
 							}	
 						break;
-						case "Children" :
+						case "ForeachChildren" :
 							// loop over all children of a family 
 							$children = $record->getChildren ();
 							foreach ( $children as $child) {
 								$counter += 1;
-								$tag_replacement .= $this->substitutePlaceHolder($child, $record, $comp ["fact"][0], $doctype, $comp ["fact"][1], array(), $counter);
+								$tag_replacement .= $this->substitutePlaceHolder($child, $record, $comp ["subtemplate"][0], $doctype, $comp ["subtemplate"][1], array(), $counter);
 							}	
 						break;
-						case "Fact" :
+						case "ForeachFactOuter" :
+						case "ForeachAttributeOuter" :
 							// loop over all fact types
 							foreach (explode ( ',', $comp["format"] [0]) as $fact_type ) {
 								// loop over facts of the same type sorted
-								$fact_records = $record->getFacts ( $fact_type, true );
-								if (!empty($fact_records)) {
-									$counter = 0;
-									foreach ($fact_records as $fact_record) {
+								$counter += 1;
+								$tag_replacement .= $this->substitutePlaceHolder($record, 
+												$record_context, $comp ["subtemplate"][0], $doctype, 
+												$comp ["subtemplate"][1], $fact_symbols, $counter, $fact_type);
+							}
+						break;
+						case "ForeachFactInner" :
+							// loop over facts of the same type sorted
+							$fact_records = $record->getFacts ( $fact_type, true );
+							if (!empty($fact_records)) {
+								foreach ($fact_records as $fact_record) {
+									$counter += 1;
+									$tag_replacement .= $this->substitutePlaceHolder($fact_record, 
+											$record, $comp ["subtemplate"][0], $doctype, 
+											$comp ["subtemplate"][1], $fact_symbols, $counter, $fact_type);
+								}
+							}
+						break;
+						case "ForeachMedia" :
+							// loop over media
+							$media_links = $record->getFacts ( "OBJE", true );
+							if (!empty($media_links)) {
+								foreach ($media_links as $media_link) {
+									$id = str_replace("@","",$media_link->getValue());
+
+									$media_record = Media::getInstance($id, $record_context->getTree());
+									$use = true;
+									
+									// check if type is in format[0]
+									if ($comp["format"] [0] != "") {
+										$types = explode ( ',', $comp["format"] [0]);
+										$type = $media_record->getMediaType();
+										if (!in_array($type, $types)) {
+											$use = false;
+										} 
+									}
+									
+									// check if ending is in format[1]
+									if ($comp["format"] [1] != "") {
+										$endings = array_map("strtolower",explode ( ',', $comp["format"] [1]));
+										
+										$filename_array = explode(".",$media_record->getFilename());
+										$n = count($filename_array);
+										if ($n > 1) {
+											$ending = strtolower($filename_array[$n-1]);
+											if (!in_array($ending, $endings)) {
+												$use = false;
+											} 
+										} else {
+											$use = false;
+										}										
+									}
+									if ($use and $media_record->canShow()) {
 										$counter += 1;
-										$tag_replacement .= $this->substitutePlaceHolder($fact_record, 
-												$record, $comp ["fact"][0], $doctype, 
-												$comp ["fact"][1], $fact_symbols, $counter);
+										$tag_replacement .= $this->substitutePlaceHolder($media_record, 
+											$record_context, $comp ["subtemplate"][0], $doctype, 
+											$comp ["subtemplate"][1], $fact_symbols, $counter, $fact_type);
 									}
 								}
-								
+							}
+						break;
+						case "ForeachReference" :
+							// get direct sources
+							$facts = $record->getFacts('SOUR');
+							$all_sources = array();
+							foreach ($facts as $fact) {
+								$all_sources[] = $fact->getValue();
+							}
+							
+							// get sources for facts
+							$facts = $record->getFacts();
+							foreach ($record->getSpouseFamilies() as $family) {
+								if ($family->canShow()) {
+									foreach ($family->getFacts() as $fact) {
+										$facts[] = $fact;
+									}
+								}
+							}
+
+							foreach ($facts as $fact) {
+								$fact_source = $fact->getAttribute('SOUR');
+								if ($fact_source) {
+									$all_sources[] = $fact_source;
+								}
+							}	
+							
+							foreach ($all_sources as $source){
+									$counter += 1;
+									$tag_replacement .= $this->substitutePlaceHolder($source, 
+											$record, $comp ["subtemplate"][0], $doctype, 
+											$comp ["subtemplate"][1], $fact_symbols, $counter, $fact_type);
 							}
 						break;
 					}						
 				}
-				// if ($tag_replacement != "" or $comp ["component"] == "Remove") {
+				//
 				if ($tag_replacement != "" or $tag_found) {
 					// data for the tag exists
 					// check for a {...} in $new_string and remove it
@@ -1830,7 +2054,7 @@ class ExportGraphmlModule extends AbstractModule implements
 							$brackets );
 					// add $new_string to $nodetext[$a]
 					$nodetext .= $new_string . $tag_replacement;
-					$new_string = "";
+					$new_string = '';
 				}
 			}
 		}
@@ -1901,6 +2125,7 @@ class ExportGraphmlModule extends AbstractModule implements
 			),array ('/\Q|\E/','\textbar ' 
 			),array ('/\Q#\E/','\#' 
 			),array ('/\Q§\E/','\S' 
+			),array ('/\n/','\\ ' 
 			)/*,array ("/\Qö\E/",'\"o' 
 			),array ("/\Qä\E/",'\"a' 
 			),array ("/\Qü\E/",'\"u' 
@@ -1917,6 +2142,47 @@ class ExportGraphmlModule extends AbstractModule implements
 		
 		return $subject;
 	}
+	/**
+	 * get Records for individuals and families
+	 *
+	 * @param Tree $tree
+	 *        	The family tree to be considered
+	 * @return string with all references
+	 */
+	private function getReferences($tree) {
+		//"SELECT s_gedcom FROM `##sources` WHERE s_file = :tree_id"
+		//"SELECT s_id FROM `##sources` WHERE s_file = :tree_id"
+		
+		$ret_string = "\n" . '\usepackage{filecontents}
+						\begin{filecontents}{\jobname.bib}';
+		
+		$source_rows = Database::prepare(
+				"SELECT s_id,s_gedcom FROM `##sources` WHERE s_file = :tree_id"
+				)->execute(array(
+						'tree_id' => $tree->getTreeId (),
+				))->fetchAll();
+				// fetchOne()
+				
+		foreach ($source_rows as $rows) {
+			$id = $rows->s_id;
+			$ret_string .= "\n" . '@book{' . str_replace('S', '', $id);
+			$record = GedcomRecord::getInstance ( $id, $tree );
+
+			// title
+			foreach ($record->getFacts('TITL') as $fact) {
+				$ret_string .= ',title   ="' . $fact->getValue() . '"';
+			}
+			// author
+			foreach ($record->getFacts('AUTH') as $fact) {
+				$ret_string .= ',author   ="' . str_replace(',', ' and ', $fact->getValue()) . '"';
+			}
+			$ret_string .= "}";
+		}
+		
+		$ret_string .= "\n" . '\end{filecontents}' . "\n";
+		
+		return $ret_string;
+	}
 	
 	/**
 	 * get Records for individuals and families
@@ -1928,26 +2194,6 @@ class ExportGraphmlModule extends AbstractModule implements
 	 * @return list record list for individuals and families
 	 */
 	private function getRecords($tree, $sort = FALSE) {
-		/**
-		 * // Get all individuals
-		 * $rowsInd = Database::prepare (
-		 * "SELECT i_id AS xref, i_gedcom AS gedcom" .
-		 *
-		 *
-		 *
-		 *
-		 *
-		 * " FROM `##individuals` WHERE i_file = :tree_id ORDER BY i_id" )->execute (
-		 * array ('tree_id' => $tree->getTreeId ()
-		 * ) )->fetchAll ();
-		 *
-		 * // Get all family records
-		 * $rowsFam = Database::prepare (
-		 * "SELECT f_id AS xref, f_gedcom AS gedcom" .
-		 * " FROM `##families` WHERE f_file = :tree_id ORDER BY f_id" )->execute (
-		 * array ('tree_id' => $tree->getTreeId ()
-		 * ) )->fetchAll ();
-		 */
 		// Get all individuals
 		$rowsInd = Database::prepare ( 
 				"SELECT i_id AS xref" .
@@ -2120,6 +2366,9 @@ class ExportGraphmlModule extends AbstractModule implements
 		
 		// loop over all individuals
 		foreach ( $xrefInd as $xref ) {
+			// increase time limit
+			$this->increaseTimeLimit();
+				
 			$record = Individual::getInstance ( $xref, $tree );
 			
 			// get parameter for the export
@@ -2142,7 +2391,7 @@ class ExportGraphmlModule extends AbstractModule implements
 			// and the node description
 			foreach ( array ("label","description" 
 			) as $a ) {
-				$nodetext [$a] = $this->substitutePlaceHolder ( $record, null,
+				$nodetext [$a] = $this->substitutePlaceHolder ( $record, $record,
 						$template [$a], "graphml", $brackets [$a] );
 			}
 			
@@ -2208,6 +2457,9 @@ class ExportGraphmlModule extends AbstractModule implements
 		
 		// loop over all families
 		foreach ( $xrefFam as $xref ) {
+			// increase time limit
+			$this->increaseTimeLimit();
+				
 			$record = Family::getInstance ( $xref, $tree );
 			
 			// now replace the tags with record data
@@ -2215,7 +2467,7 @@ class ExportGraphmlModule extends AbstractModule implements
 			foreach ( array ("label","description" 
 			) as $a ) {
 				
-				$nodetext [$a] = $this->substitutePlaceHolder ( $record, null,
+				$nodetext [$a] = $this->substitutePlaceHolder ( $record, $record,
 						$template [$a], "graphml", $brackets [$a] );
 				/*
 				 * //$nodetext [$a] = "";
@@ -2436,6 +2688,12 @@ class ExportGraphmlModule extends AbstractModule implements
 		// slow when writing large files (copied from one of the webtree modules).
 		$buffer = $parameter ["preamble"];
 		
+		// now add bibliography
+		$buffer .= $this->getReferences($tree);
+		
+		// now add title
+		$buffer .= $parameter ["title"];
+		
 		// get record of individuals and families
 		list ( $xrefInd, $xrefFam, $generationInd, $generationFam ) = $this->getRecords ( 
 				$tree, TRUE );
@@ -2447,6 +2705,9 @@ class ExportGraphmlModule extends AbstractModule implements
 		// loop over all individuals
 		$last_branch = 0;
 		foreach ( $generationInd as $xref => $value ) {
+			// increase time limit
+			$this->increaseTimeLimit();
+			
 			$branch = $value ['branch'];
 			$generation = $value ['generation'];
 			$name = $value ['name'];
@@ -2479,11 +2740,10 @@ class ExportGraphmlModule extends AbstractModule implements
 			
 			// loop to create the output for the node label
 			// and the node description
-
-			$nodetext = $this->substitutePlaceHolder ( $record, null,
+			
+			$nodetext = $this->substitutePlaceHolder ( $record, $record,
 						$template, "latex", $brackets, $fact_symbols );
 
-			
 			// no line break before $nodetext allowed
 			$buffer .= $nodetext  . "\n";
 			
