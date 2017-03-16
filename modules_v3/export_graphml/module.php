@@ -28,10 +28,12 @@ use Fisharebest\Webtrees\Media;
 use Fisharebest\Webtrees\GedcomTag;
 use Fisharebest\Webtrees\GedcomRecord;
 use Fisharebest\Webtrees\Functions\Functions;
+use Fisharebest\Webtrees\Functions\FunctionsPrint;
 use Symfony\Component\Finder\Tests\FakeAdapter\NamedAdapter;
 use Symfony\Component\Finder\Iterator\FilenameFilterIterator;
 use phpDocumentor\Reflection\DocBlock\Tag;
 use Zend\Filter\Boolean;
+
 
 /**
  * Class to export a family tree in graphml format
@@ -260,6 +262,9 @@ class ExportGraphmlModule extends AbstractModule implements
 				array('Remove', '',
 						I18N::translate ('String to be removed' ),
 						'@Remove&,@'),
+				array('Replace', '',
+						I18N::translate ('String to be replaced & replacement' ),
+						'@Replace&:&\\@'),
 				array('ForeachXXXX', 
 						I18N::translate ('Foreach loop with XXXX=FAMS, Children' ),
 						'-', '@ForeachFAMS@'),
@@ -269,9 +274,11 @@ class ExportGraphmlModule extends AbstractModule implements
 				array('ForeachFactInner', 
 						I18N::translate ('Foreach loop over facts within in ForeachFactOuter loop' ),
 						'-', '@ForeachFactInner@'),
-				array('FeFactType', 
+				array('FeFactType, FeAttributeType', 
 						I18N::translate ('Returns the fact type within a ForeachFactOuter loop' ),
-						'- or IfExists (nothing is returned if no facts exists)', '@FeFactType@'),
+						'IfExists (nothing is returned if no facts exists)&prefix&postfix', 
+						
+				'@FeFactType&IfExists&\underline{&}:@'),
 				array('FeFactValue', 
 						I18N::translate ('Returns the fact value within a ForeachFactInner loop' ),
 						'-', '@FeFactValue@'),
@@ -821,6 +828,17 @@ class ExportGraphmlModule extends AbstractModule implements
 		<tr><td class="topbottombar" colspan="7">', I18N::translate ( 
 				'Export tree in latex format' ), '</td></tr>';
 		
+		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate ( 
+				"Reference Individual" ), '</td>';
+		
+		echo '<td class="optionbox" colspan="4">';
+
+
+		echo '<label for="pid">' . I18N::translate('Enter an individual ID') . '</label>';
+		echo '<input class="pedigree_form" data-autocomplete-type="IFSRO" type="text" name="refid" id="pid" size="5" value="">';
+		echo ' ' . FunctionsPrint::printFindIndividualLink('pid');
+		echo '</td>';
+		
 		/*
 		 * Preamble
 		 */
@@ -936,6 +954,25 @@ class ExportGraphmlModule extends AbstractModule implements
 			 	'" name="' . $name . '"></td></tr>';
 		}
 
+		/*
+		 * hierarchy for family tree and generation
+		 *
+		 */
+		echo '<tr><td class="descriptionbox width30 wrap" colspan="5">', I18N::translate (
+				'Document hierarchy' ), '</td></tr>';
+		
+		foreach ( array ("tree","generation"
+		) as $s ) {
+			echo '<tr><td class="descriptionbox width30 wrap" rowspan="1">', I18N::translate (
+					'Hierarchy level for ' . $s), '</td>';
+		
+			$name = 'hierarchy_' . $s;
+			echo '<td class="optionbox" colspan="1">
+				<input type="text" size="30" value="' .
+						(array_key_exists ( $name, $settings ) ? $settings [$name] : "") .
+						'" name="' . $name . '"></td></tr>';
+		}
+		
 		
 		//echo '<td class="optionbox" colspan="1"/></tr>';
 		
@@ -1598,6 +1635,22 @@ class ExportGraphmlModule extends AbstractModule implements
 		}
 		return $subject;
 	}
+	/**
+	 * Get the value of level 2 data in the fact
+	 *
+	 * @param fact $fact
+	 * @param string $tag
+	 *
+	 * @return string|null
+	 */
+	private function getAllAttributes($fact, $tag) {
+		$gedcom = $fact->getGedcom();
+		if (preg_match_all('/\n2 (?:' . $tag . ') ?(.*(?:(?:\n3 CONT ?.*)*)*)/', $gedcom, $match)) {
+			return preg_replace("/\n3 CONT ?/", "\n", $match[1]);
+		} else {
+			return null;
+		}
+	}
 	
 	/**
 	 * Substitute place holder in template for individuals
@@ -1803,6 +1856,13 @@ class ExportGraphmlModule extends AbstractModule implements
 											GedcomTag::getLabel($fact_type, $record_context)
 											, $doctype );
 									$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
+									
+									if (count($format) > 1) {
+										$tag_replacement = $format[1] . $tag_replacement;
+									}
+									if (count($format) > 2) {
+										$tag_replacement = $tag_replacement . $format[2];
+									}
 								}
 								$new_string .= $tag_replacement;
 								$tag_replacement = '';
@@ -1845,12 +1905,12 @@ class ExportGraphmlModule extends AbstractModule implements
 								exit ('Image name \'' . $filename . "\' does not have an ending" );
 							} else if ($format[0] == "NoExtension") {
 								// return file name without ending	 
-									$tag_replacement .= implode(array_slice($filename_array,0,$n-1));
+									$tag_replacement .= implode(".", array_slice($filename_array,0,$n-1));
 							} else {
 								// return full file name
 								$tag_replacement .= $filename;
 							} 
-							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
+							//$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
 							break;	
 						case "FeMediaCaption" :
 							$tag_replacement .= $record->getTitle();
@@ -1921,8 +1981,30 @@ class ExportGraphmlModule extends AbstractModule implements
 									$new_length = strlen($nodetext);
 								} while($old_length !=  $new_length);
 							}
-							break;
+						break;
+						case "Replace" :
+							if (count($format) > 1 ){
+								$search_array = "/\Q" . $format[0] . '\E(?=[\\r\\n\\' . $brackets [0] . '\\' . $brackets [1] . '\s]*$)/';
+								$replace_array = str_replace ('\\','\\\\',$format[1]);
+								if (str_replace(array("\n"," "),"",$new_string) != '') {
+									$new_string = $this->removeBrackets (
+											$new_string, $brackets );
+									do {
+										$old_length = strlen($new_string);
+										$new_string = preg_replace ( $search_array, $replace_array, $new_string );
+										$new_length = strlen($new_string);
+									} while($old_length !=  $new_length);
 							
+								} else {
+									do {
+										$old_length = strlen($nodetext);
+										$nodetext = preg_replace ( $search_array, $replace_array, $nodetext );
+										$new_length = strlen($nodetext);
+									} while($old_length !=  $new_length);
+								}
+							}
+							break;
+						
 					}
 
 				} elseif ($comp ["type"] == "foreach") {
@@ -2020,7 +2102,7 @@ class ExportGraphmlModule extends AbstractModule implements
 								$all_sources[] = $fact->getValue();
 							}
 							
-							// get sources for facts
+							// get all facts
 							$facts = $record->getFacts();
 							foreach ($record->getSpouseFamilies() as $family) {
 								if ($family->canShow()) {
@@ -2030,12 +2112,14 @@ class ExportGraphmlModule extends AbstractModule implements
 								}
 							}
 
-							foreach ($facts as $fact) {
-								$fact_source = $fact->getAttribute('SOUR');
-								if ($fact_source) {
-									$all_sources[] = $fact_source;
+							// get sources from facts
+							foreach ($facts as $fact) {								
+								$fact_sources = $this->getAllAttributes($fact,'SOUR');
+								if ($fact_sources) {
+									$all_sources = array_merge($all_sources, $fact_sources);
 								}
-							}	
+							}
+							$all_sources = array_unique($all_sources);
 							
 							foreach ($all_sources as $source){
 									$counter += 1;
@@ -2069,7 +2153,7 @@ class ExportGraphmlModule extends AbstractModule implements
 				), array ("","" 
 				), $nodetext );
 		
-		if ($doctype = "graphml") {
+		if ($doctype == "graphml") {
 			$nodetext = preg_replace ( "/<html>\s*<\/html>/", "", $nodetext );
 		}
 		
@@ -2150,8 +2234,6 @@ class ExportGraphmlModule extends AbstractModule implements
 	 * @return string with all references
 	 */
 	private function getReferences($tree) {
-		//"SELECT s_gedcom FROM `##sources` WHERE s_file = :tree_id"
-		//"SELECT s_id FROM `##sources` WHERE s_file = :tree_id"
 		
 		$ret_string = "\n" . '\usepackage{filecontents}
 						\begin{filecontents}{\jobname.bib}';
@@ -2174,7 +2256,8 @@ class ExportGraphmlModule extends AbstractModule implements
 			}
 			// author
 			foreach ($record->getFacts('AUTH') as $fact) {
-				$ret_string .= ',author   ="' . str_replace(',', ' and ', $fact->getValue()) . '"';
+				$ret_string .= ',author   ="' . 
+					str_replace(array(',','&'), array(' and ','\&'), $fact->getValue()) . '"';
 			}
 			$ret_string .= "}";
 		}
@@ -2280,16 +2363,31 @@ class ExportGraphmlModule extends AbstractModule implements
 		}
 		// loop over families to start with a new branch
 		if ($sort) {
-			$branch = 0;
+			# if reference individual are set start 
+			# with this individual and return pnly one tree
+			#
+			$branch = 1;
+			if ($_GET["refid"]) {
+				$xrefInd = $_GET["refid"];
+				$record = Individual::getInstance ( $xrefInd, $tree );
+				$FAMS = $record->getSpouseFamilies ();
+				
+				if ($FAMS) {
+					$xref = $FAMS[0]->getXref();
+					setGeneration ( $tree, $xref, $branch, 1 );
+					$branch += 1;
+				}
+			}
+				
 			foreach ( $xrefFam as $xref ) {
 				if (empty ( $generationFam ) or
 						 ! array_key_exists ( $xref, $generationFam )) {
-					$branch += 1;
 					setGeneration ( $tree, $xref, $branch, 1 );
+					$branch += 1;
 				}
-				;
+					;
 			}
-			;
+				;
 			// now sort for branches and generations
 			
 			foreach ( $generationInd as $key => $row ) {
@@ -2323,7 +2421,7 @@ class ExportGraphmlModule extends AbstractModule implements
 		
 		//
 		
-		return array ($xrefInd,$xrefFam,$generationInd,$generationFam 
+		return array ($xrefInd, $xrefFam, $generationInd, $generationFam 
 		);
 	}
 	
@@ -2676,10 +2774,15 @@ class ExportGraphmlModule extends AbstractModule implements
 		
 		// now generate an array with fact names to be replaced by symbols
 		$fact_symbols = array();
+		$fact_legend = array();
 		foreach( explode("\n",$parameter["symbols"]) as $row) {
 			$row = trim($row);
-			if (strlen($row)>5) {
-				$fact_symbols[substr($row,0,4)] = substr($row,5);
+			$cols = explode(",",$row);
+			if (count($cols)>1) {
+				$fact_symbols[$cols[0]] = $cols[1];
+			}
+			if (count($cols)>2) {
+				$fact_legend[$cols[0]] = $cols[1];
 			}
 		}
 		
@@ -2687,6 +2790,20 @@ class ExportGraphmlModule extends AbstractModule implements
 		// Buffer the output. Lots of small fwrite() calls can be very
 		// slow when writing large files (copied from one of the webtree modules).
 		$buffer = $parameter ["preamble"];
+		
+		// no add legend
+		if (count($fact_legend) > 0) {
+			$buffer .= '\newcommand{\GedcomLegende}{\begin{compactenum}';
+			foreach ($fact_legend as $key => $symbol) {
+				$label = GedcomTag::getLabel($key);
+				if (strlen($label) > 4 and substr($label,0,5) == '<span') {					
+					$buffer .= '\item[' . $symbol . '] ' . $key;
+				} else {
+					$buffer .= '\item[' . $symbol . '] ' . GedcomTag::getLabel($key);						
+				}
+			}
+			$buffer .= '\end{compactenum}}';
+		}
 		
 		// now add bibliography
 		$buffer .= $this->getReferences($tree);
@@ -2714,14 +2831,14 @@ class ExportGraphmlModule extends AbstractModule implements
 			$givenname = $value ['givenname'];
 			
 			if ($branch > $last_branch) {
-				$buffer .= "\chapter{Branch " . $branch . "}" . "\n";
+				$buffer .= $parameter["hierarchy_tree"] . " " . $branch . "}" . "\n";
 				$first_generation = $generation;
 				$last_generation = $generation - 1;
 				$last_branch = $branch;
 			}
 			
 			if ($generation > $last_generation) {
-				$buffer .= "\section*{Generation " .
+				$buffer .= $parameter["hierarchy_generation"] . " " .
 						 ($generation - $first_generation + 1) . "}" . "\n";
 				$last_generation = $generation;
 			}
