@@ -957,6 +957,32 @@ class ExportGraphmlModule extends AbstractModule implements
 		echo '</textarea></td></tr>';
 		
 		/*
+		 * include exclude media objects
+		 */
+		echo '<tr><td class="descriptionbox width30 wrap" colspan="7">', I18N::translate (
+				'Include and exclude media objects' ), '</td></tr>';
+		
+		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate (
+				"Include" ), '</td>';		
+		$name = "include_media";
+		$s = (array_key_exists ( $name, $settings ) ? $settings [$name] : "");
+		$nrow = min(2,substr_count ( $s, "\n" ) + 1);
+		echo '<td class="optionbox" colspan="6">' . '<textarea rows="' . $nrow .
+		'" cols="100" name="' . $name . '">';
+		echo $s;
+		echo '</textarea></td></tr>';
+		
+		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate (
+				"Exclude" ), '</td>';
+		$name = "exclude_media";
+		$s = (array_key_exists ( $name, $settings ) ? $settings [$name] : "");
+		$nrow = min(2,substr_count ( $s, "\n" ) + 1);
+		echo '<td class="optionbox" colspan="6">' . '<textarea rows="' . $nrow .
+		'" cols="100" name="' . $name . '">';
+		echo $s;
+		echo '</textarea></td></tr>';
+		
+		/*
 		 * default format for dates and places
 		 *
 		 */
@@ -1697,6 +1723,7 @@ class ExportGraphmlModule extends AbstractModule implements
 	private function substitutePlaceHolder($record, $record_context, $template, $doctype, 
 			$brackets = array("{","}"), $fact_symbols = array(), $counter = 0, $fact_type = "") {
 		global $generationInd;
+		global $include_exclude_media;
 		//$xref = $record->getXref();
 		//if (!empty($xref) and $xref[0] == "I") {
 		if ($record instanceof Fisharebest\Webtrees\Individual ) {
@@ -2103,32 +2130,39 @@ class ExportGraphmlModule extends AbstractModule implements
 									$id = str_replace("@","",$media_link->getValue());
 
 									$media_record = Media::getInstance($id, $record_context->getTree());
-									$use = true;
 									
-									// check if type is in format[0]
-									if ($comp["format"] [0] != "") {
-										$types = explode ( ',', $comp["format"] [0]);
-										$type = $media_record->getMediaType();
-										if (!in_array($type, $types)) {
-											$use = false;
-										} 
-									}
-									
-									// check if ending is in format[1]
-									if ($comp["format"] [1] != "") {
-										$endings = array_map("strtolower",explode ( ',', $comp["format"] [1]));
-										
-										$filename_array = explode(".",$media_record->getFilename());
-										$n = count($filename_array);
-										if ($n > 1) {
-											$ending = strtolower($filename_array[$n-1]);
-											if (!in_array($ending, $endings)) {
+									if (in_array($id, $include_exclude_media["include"])) {
+										$use = TRUE;
+									} else if (in_array($id, $include_exclude_media["exclude"])) {
+										$use = false;
+									} else {
+										$use = true;
+										// check if type is in format[0]
+										if ($comp["format"] [0] != "") {
+											$types = explode ( ',', $comp["format"] [0]);
+											$type = $media_record->getMediaType();
+											if (!in_array($type, $types)) {
 												$use = false;
-											} 
-										} else {
-											$use = false;
-										}										
+											}
+										}
+
+										// check if ending is in format[1]
+										if ($comp["format"] [1] != "") {
+											$endings = array_map("strtolower",explode ( ',', $comp["format"] [1]));
+											
+											$filename_array = explode(".",$media_record->getFilename());
+											$n = count($filename_array);
+											if ($n > 1) {
+												$ending = strtolower($filename_array[$n-1]);
+												if (!in_array($ending, $endings)) {
+													$use = false;
+												} 
+											} else {
+												$use = false;
+											}										
+										}
 									}
+									
 									if ($use and $media_record->canShow()) {
 										$counter += 1;
 										$tag_replacement .= $this->substitutePlaceHolder($media_record, 
@@ -2520,10 +2554,10 @@ class ExportGraphmlModule extends AbstractModule implements
 					$ref = '';
 				}
 				// now check if direct ancestor or direct descendant
-				if (!preg_match('/[^FM]/' , $ref) or !preg_match('/[^SD]/' , $ref)) {
+				if (!preg_match('/[WHSD]/' , $ref) or !preg_match('/[WHFM]/' , $ref)) {
 					// direct ancestor or direct descendant
 					$generationInd [$key] ['ancestor'] = 1;
-				} else if (preg_match('/^[FM]*[SD]$/' , $ref)) {
+				} else if (preg_match('/^[FM]*[SD]*$/' , $ref)) {
 					// indirect 
 					$generationInd [$key] ['ancestor'] = 2;
 				}
@@ -2890,6 +2924,7 @@ class ExportGraphmlModule extends AbstractModule implements
 	 */
 	private function exportLatex(Tree $tree, $gedout) {
 		
+		global $include_exclude_media;
 		// get parameter entered in the web form
 		$parameter = $_GET;
 		
@@ -2899,6 +2934,14 @@ class ExportGraphmlModule extends AbstractModule implements
 		// data for the familty tree record.
 		list ( $template, $brackets ) = $this->splitTemplate ( 
 					$parameter [$name] );
+		
+		// get list of media to be included and excluded
+		$include_exclude_media = array("include" => array(), "exclude" => array());
+		foreach (array("include", "exclude") as $a) {
+			$media_list = $parameter[$a."_media"];
+			$l = strlen($media_list);
+			if (strlen($media_list) > 0) $include_exclude_media[$a] = array_map('strtoupper',array_map('trim',explode(',', $media_list)));
+		}
 		
 		// now generate an array with fact names to be replaced by symbols
 		$all_symb = $parameter["symbols"];
