@@ -140,6 +140,8 @@ class ExportGraphmlModule extends AbstractModule implements
 	public function modAction($mod_action) {
 		global $WT_TREE;
 		
+		if ($mod_action == 'get_from_post') $mod_action = $_POST['post_mod_action'];
+		
 		switch ($mod_action) {
 			case 'set_parameter_graphml' :
 				// open a form to define the export format
@@ -195,7 +197,7 @@ class ExportGraphmlModule extends AbstractModule implements
 				fwrite ( $stream, pack ( "CCC", 0xef, 0xbb, 0xbf ) );
 				
 				// write parameter
-				fwrite ( $stream, base64_encode ( serialize ( $_GET ) ) );
+				fwrite ( $stream, base64_encode ( serialize ( $_POST ) ) );
 				
 				fclose ( $stream );
 				
@@ -291,7 +293,7 @@ class ExportGraphmlModule extends AbstractModule implements
 						'-', '@FeFactValue@'),
 				array('ForeachMedia', 
 						I18N::translate ('Foreach loop over media object' ),
-						'1. Comma separated list of types 2. Comma separated list of formats', 
+						'1. Comma separated list of types, 2. Comma separated list of formats, 3. unique if no duplicates', 
 						'@ForeachMedia&photo&jpg,png@'),
 				array('FeMediaFile', 
 						I18N::translate ('Returns the media file name within a ForeachMedia loop' ),
@@ -412,9 +414,14 @@ class ExportGraphmlModule extends AbstractModule implements
 		;
 				
 		// header line of the form
+		//echo '<div id="reportengine-page">
+		//<form name="setupreport" method="get" action="module.php">
+		//<input type="hidden" name="mod" value=', $this->getName (), '>';
+		// new post mathod
 		echo '<div id="reportengine-page">
-		<form name="setupreport" method="get" action="module.php">
-		<input type="hidden" name="mod" value=', $this->getName (), '>';
+				<form name="setupreport" enctype="multipart/form-data" method="POST"
+				action="module.php?mod=' . $this->getName () .
+						'&mod_action=get_from_post">';
 		
 		
 		echo '<table class="facts_table width50">
@@ -454,6 +461,26 @@ class ExportGraphmlModule extends AbstractModule implements
 		}
 		
 		
+		/*
+		 * seeds for branches
+		 */
+		/*
+		echo '<tr><td class="descriptionbox width30 wrap" colspan="7">', I18N::translate (
+				'Seeds for branches' ), '</td></tr>';
+		
+		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate (
+				"Seeds" ), '</td>';
+		
+		$name = "branch_seeds";
+		$s = (array_key_exists ( $name, $settings ) ? $settings [$name] : "");
+		
+		$nrow = min(10,substr_count ( $s, "\n" ) + 1);
+		
+		echo '<td class="optionbox" colspan="6">' . '<textarea rows="' . $nrow .
+		'" cols="100" name="' . $name . '">';
+		echo $s;
+		echo '</textarea></td></tr>';
+		*/
 		/*
 		 * Box style header
 		 *
@@ -745,16 +772,21 @@ class ExportGraphmlModule extends AbstractModule implements
 				 (array_key_exists ( "edge_line_width", $settings ) ? $settings ["edge_line_width"] : "1") .
 				 '" step="0.1" name="edge_line_width" min="1" max="7"></td></tr>';
 		
-		// Submit button<
-		echo '<tr><td class="topbottombar" colspan="6">', '<button name="mod_action" value="export_graphml">', I18N::translate ( 
-				'Export Family Tree' ), '</button>', '</td></tr>';
+		// Submit button
+		//echo '<tr><td class="topbottombar" colspan="6">', 
+		//'<button name="mod_action" value="export_graphml">', I18N::translate ( 
+		//		'Export Family Tree' ), '</button>', '</td></tr>';
 		// echo '</form>';
+		// new for post method
+		echo '<tr><td class="topbottombar" colspan="6">',
+		'<button type="submit" name="post_mod_action" value="export_graphml">', I18N::translate (
+				'Export Family Tree' ), '</button>','</td></tr>';
 		
 		// download settings
 		// echo '<form name="download" method="get" action="module.php">
 		// <input type="hidden" name="mod" value=', $this->getName (), '>';
 		// <input type="hidden" name="mod_action" value="export">
-		echo '<tr><td class="topbottombar" colspan="6">', '<button name="mod_action" value="download_settings_graphml">', I18N::translate ( 
+		echo '<tr><td class="topbottombar" colspan="6">', '<button name="post_mod_action" name="post_mod_action" value="download_settings_graphml">', I18N::translate ( 
 				'Download Settings' ), '</button></td></tr>';
 		echo '</table></form>';
 		// echo '</table></form>';
@@ -773,7 +805,7 @@ class ExportGraphmlModule extends AbstractModule implements
 		// <input type="hidden" name="mod" value=', $this->getName (), '>';
 		
 		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate ( 
-				'Read' ), '</td><td class="optionbox" colspan="4">', '<input name="uploadedfile" type="file"/>', '<button type="submit" value="upload_settings">', I18N::translate ( 
+				'Read' ), '</td><td class="optionbox" colspan="4">', '<input name="uploadedfile" type="file"/>', '<button type="submit" name="post_mod_action" value="upload_settings">', I18N::translate ( 
 				'Upload Settings' ), '</button></td></tr>';
 		echo '</table></form>';
 		
@@ -826,9 +858,15 @@ class ExportGraphmlModule extends AbstractModule implements
 		;
 		
 		// header line of the form
+		//echo '<div id="reportengine-page">
+		//<form name="setupreport" method="get" action="module.php">
+		//<input type="hidden" name="mod" value=', $this->getName (), '>';
+		// new post
 		echo '<div id="reportengine-page">
-		<form name="setupreport" method="get" action="module.php">
-		<input type="hidden" name="mod" value=', $this->getName (), '>';
+				<form name="setupreport" enctype="multipart/form-data" method="POST"
+				action="module.php?mod=' . $this->getName () .
+						'&mod_action=get_from_post">';
+		
 		// <input type="hidden" name="mod_action" value="export">
 		
 		echo '<table class="facts_table width50">
@@ -938,6 +976,25 @@ class ExportGraphmlModule extends AbstractModule implements
 		echo '</textarea></td></tr>';
 		
 		/*
+		 * seeds for branches
+		 */
+		echo '<tr><td class="descriptionbox width30 wrap" colspan="7">', I18N::translate (
+				'Seeds for branches' ), '</td></tr>';
+		
+		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate (
+				"Seeds" ), '</td>';
+		
+		$name = "branch_seeds";
+		$s = (array_key_exists ( $name, $settings ) ? $settings [$name] : "");
+		
+		$nrow = min(10,substr_count ( $s, "\n" ) + 1);
+		
+		echo '<td class="optionbox" colspan="6">' . '<textarea rows="' . $nrow .
+		'" cols="100" name="' . $name . '">';
+		echo $s;
+		echo '</textarea></td></tr>';
+		
+		/*
 		 * Replacement for fact abbreviations
 		 */
 		echo '<tr><td class="descriptionbox width30 wrap" colspan="7">', I18N::translate (
@@ -1008,7 +1065,7 @@ class ExportGraphmlModule extends AbstractModule implements
 		echo '<tr><td class="descriptionbox width30 wrap" colspan="7">', I18N::translate (
 				'Document hierarchy' ), '</td></tr>';
 		
-		foreach ( array ("tree","generation"
+		foreach ( array ("branch","sub_branch","generation"
 		) as $s ) {
 			echo '<tr><td class="descriptionbox width30 wrap" colspan="1">', I18N::translate (
 					'Hierarchy level for ' . $s), '</td>';
@@ -1025,15 +1082,20 @@ class ExportGraphmlModule extends AbstractModule implements
 		
 		
 		
-		// Submit button<
-		echo '<tr><td class="topbottombar" colspan="7">', '<button name="mod_action" value="export_latex">', I18N::translate ( 
-				'Export Family Tree' ), '</button>', '</td></tr>';
+		// Submit button
+		//echo '<tr><td class="topbottombar" colspan="7">', 
+		//'<button name="mod_action" value="export_latex">', I18N::translate ( 
+		//		'Export Family Tree' ), '</button>', '</td></tr>';
+		// new for post method
+		echo '<tr><td class="topbottombar" colspan="7">', 
+		'<button type="submit" name="post_mod_action" value="export_latex">', I18N::translate (
+				'Export Family Tree' ), '</button>','</td></tr>';
 		
 		// download settings
 		// echo '<form name="download" method="get" action="module.php">
 		// <input type="hidden" name="mod" value=', $this->getName (), '>';
 		// <input type="hidden" name="mod_action" value="export">
-		echo '<tr><td class="topbottombar" colspan="7">', '<button name="mod_action" value="download_settings_latex">', I18N::translate ( 
+		echo '<tr><td class="topbottombar" colspan="7">', '<button name="post_mod_action" value="download_settings_latex">', I18N::translate ( 
 				'Download Settings' ), '</button></td></tr>';
 		echo '</table></form>';
 		// echo '</table></form>';
@@ -1052,7 +1114,7 @@ class ExportGraphmlModule extends AbstractModule implements
 		// <input type="hidden" name="mod" value=', $this->getName (), '>';
 		
 		echo '<tr><td class="descriptionbox width30 wrap">', I18N::translate ( 
-				'Read' ), '</td><td class="optionbox" colspan="6">', '<input name="uploadedfile" type="file"/>', '<button type="submit" value="upload_settings">', I18N::translate ( 
+				'Read' ), '</td><td class="optionbox" colspan="6">', '<input name="uploadedfile" type="file"/>', '<button type="submit" name="post_mod_action" value="upload_settings">', I18N::translate ( 
 				'Upload Settings' ), '</button></td></tr>';
 		echo '</table></form>';
 		
@@ -1151,8 +1213,8 @@ class ExportGraphmlModule extends AbstractModule implements
 		}
 		if ($place) {
 			// check if default format to be used
-			if (!$format and array_key_exists("default_place_format",$_GET)) {
-				$format = $_GET["default_place_format"];
+			if (!$format and array_key_exists("default_place_format",$_POST)) {
+				$format = $_POST["default_place_format"];
 			}
 			
 			if (! $format) {
@@ -1206,8 +1268,8 @@ class ExportGraphmlModule extends AbstractModule implements
 	private function formatDate($date, $format) {
 		if ($date instanceof Date) {
 			// check if default format to be used
-			if (!$format and array_key_exists("default_date_format",$_GET)) {
-				$format = $_GET["default_date_format"];
+			if (!$format and array_key_exists("default_date_format",$_POST)) {
+				$format = $_POST["default_date_format"];
 			}
 				
 			$date_label = strip_tags ( $date->display ( false, $format ) );
@@ -1262,8 +1324,8 @@ class ExportGraphmlModule extends AbstractModule implements
 			} else {
 				$s = 'unknown';
 			}
-			if (array_key_exists ( 'default_portrait_' . $s, $_GET )) {
-				$portrait_fallback = $_GET ['default_portrait_' . $s];
+			if (array_key_exists ( 'default_portrait_' . $s, $_POST )) {
+				$portrait_fallback = $_POST ['default_portrait_' . $s];
 			} else {
 				$portrait_fallback = "";
 			}
@@ -1671,8 +1733,8 @@ class ExportGraphmlModule extends AbstractModule implements
 	private function removeBrackets($subject, $brackets) {
 		$count = 1;
 		// take into account that there might be multiple brackets.
-		if (! is_null ( $brackets )) {
-			while ( $count > 0 ) {
+		if (! is_null ( $brackets ) and count($brackets) == 2) {
+			while ( $count > 0 and strlen($subject) > 0) {
 				// use regular expressions to remove brackets
 				$subject = preg_replace ( 
 						"/\Q" . $brackets [0] . "\E[^\Q" . $brackets [0] .
@@ -1696,6 +1758,23 @@ class ExportGraphmlModule extends AbstractModule implements
 			return preg_replace("/\n3 CONT ?/", "\n", $match[1]);
 		} else {
 			return null;
+		}
+	}
+
+	/**
+	 * Returns a format element or ""
+	 *
+	 * This module returns a format element or "".
+	 *
+	 * @param array $format Format array
+	 * @param integer $i Array element
+	 * @return array element or empty string
+	 */
+	private function get_format($format, $i) {
+		if (count($format) > $i) {
+			return $format[$i];
+		} else {
+			return "";
 		}
 	}
 	
@@ -1724,6 +1803,9 @@ class ExportGraphmlModule extends AbstractModule implements
 			$brackets = array("{","}"), $fact_symbols = array(), $counter = 0, $fact_type = "") {
 		global $generationInd;
 		global $include_exclude_media;
+		global $media_included;
+		if (!isset($media_included)) $media_included = array();
+		
 		//$xref = $record->getXref();
 		//if (!empty($xref) and $xref[0] == "I") {
 		if ($record instanceof Fisharebest\Webtrees\Individual ) {
@@ -1748,6 +1830,7 @@ class ExportGraphmlModule extends AbstractModule implements
 			foreach ( $template as $comp ) {
 				$tag_replacement = "";
 				$tag_found = FALSE;
+				$format = $comp ["format"];
 				
 				if ($comp ["type"] == "string") {
 					// element is a string, add it to $new_string
@@ -1756,7 +1839,7 @@ class ExportGraphmlModule extends AbstractModule implements
 					// $comp ["component"], $doctype);
 				} elseif ($comp ["type"] == "tag") {
 					// element is a tag, get the tag data
-					$format = $comp ["format"];
+						
 					switch ($comp ["component"]) {
 						case "GivenName" :
 						case "FatherGivenName" :
@@ -1799,7 +1882,7 @@ class ExportGraphmlModule extends AbstractModule implements
 								case "SpouseGivenName" :
 									If (! is_null ( $rec )) {
 									$tag_replacement .= $this->getGivenName ( $rec, 
-										$format [0] );
+										$this->get_format($format, 0) );
 									}							
 									break;
 								case "SurName" :
@@ -1852,47 +1935,47 @@ class ExportGraphmlModule extends AbstractModule implements
 							}
 							If (! is_null ( $rec )) {
 								$xref = $rec->getXref ();
-								if ($format [0]) {
+								if ($this->get_format($format, 0) != "") {
 									$tag_replacement = $generationInd[$xref]["gen_no"];
 								} else {
-									$tag_replacement = $generationInd[$xref][$format[0]];
+									$tag_replacement = $generationInd[$xref][$this->get_format($format, 0)];
 								}
 								$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
 							}
 							break;
 						case "BirthDate" :
 							$tag_replacement .= $this->formatDate ( 
-									$record->getBirthDate (), $format [0] );
+									$record->getBirthDate (), $this->get_format($format, 0) );
 							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
 							break;
 						case "BirthPlace" :
 							$tag_replacement .= $this->formatPlace ( 
-									$record->getBirthPlace (), $format [0] );
+									$record->getBirthPlace (), $this->get_format($format, 0) );
 							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
 							break;
 						case "DeathDate" :
 							$tag_replacement .= $this->formatDate ( 
-									$record->getDeathDate (), $format [0] );
+									$record->getDeathDate (), $this->get_format($format, 0) );
 							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
 							break;
 						case "DeathPlace" :
 							$tag_replacement .= $this->formatPlace ( 
-									$record->getDeathPlace (), $format [0] );
+									$record->getDeathPlace (), $this->get_format($format, 0) );
 							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
 							break;
 						case "MarriageDate" :
 							$tag_replacement .= $this->formatDate ( 
-									$record->getMarriageDate (), $format [0] );
+									$record->getMarriageDate (), $this->get_format($format, 0) );
 							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
 							break;
 						case "MarriagePlace" :
 							$tag_replacement .= $this->formatPlace ( 
-									$record->getMarriagePlace (), $format [0] );
+									$record->getMarriagePlace (), $this->get_format($format, 0) );
 							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
 							break;
 						case "Fact" :
 							$tag_replacement .= $this->getFact ( $record, 
-									$comp ["fact"], $format [0] );
+									$comp ["fact"], $this->get_format($format, 0) );
 							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
 							break;
 						case "Reference" :
@@ -1906,14 +1989,14 @@ class ExportGraphmlModule extends AbstractModule implements
 							$xref = $record->getXref();
 							if (array_key_exists($xref, $generationInd)) {
 								if ($generationInd[$xref]["ancestor"] == 1 or $generationInd[$xref]["ancestor"] == 2 ) {
-									$tag_replacement .= $format[$generationInd[$xref]["ancestor"] -1];
+									$tag_replacement .= $this->get_format($format, $generationInd[$xref]["ancestor"] -1);
 								}
 							}
 							break;
 						case "FeAttributeType" :
 						case "FeFactType" :
 							$return_value = TRUE;
-							if ($format[0] == "IfExist" and  get_class ( $record ) != "Fisharebest\Webtrees\Fact") {
+							if ($this->get_format($format, 0) == "IfExist" and  get_class ( $record ) != "Fisharebest\Webtrees\Fact") {
 								$fact_records = $record->getFacts ( $fact_type, true );
 								if (empty($fact_records)) {
 									$return_value = FALSE;
@@ -1928,12 +2011,9 @@ class ExportGraphmlModule extends AbstractModule implements
 											, $doctype );
 									$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
 									
-									if (count($format) > 1) {
-										$tag_replacement = $format[1] . $tag_replacement;
-									}
-									if (count($format) > 2) {
-										$tag_replacement = $tag_replacement . $format[2];
-									}
+
+									$tag_replacement = $this->get_format($format, 1) . $tag_replacement;
+									$tag_replacement = $tag_replacement . $this->get_format($format, 2);
 								}
 								$new_string .= $tag_replacement;
 								$tag_replacement = '';
@@ -1944,18 +2024,18 @@ class ExportGraphmlModule extends AbstractModule implements
 							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
 							break;
 						case "FeFactDate" :
-							$tag_replacement .= $this->formatDate ( $record->getDate(),$format [0]) ;
+							$tag_replacement .= $this->formatDate ( $record->getDate(),$this->get_format($format, 0)) ;
 							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
 							break;
 						case "FeFactPlace" :
-							$tag_replacement .= $this->formatPlace ( $record->getPlace(),$format [0]);
+							$tag_replacement .= $this->formatPlace ( $record->getPlace(),$this->get_format($format, 0));
 							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
 							break;	
 						case "FeFactAttribute" :
 							if ($fact_type == 'DATE') {
-								$tag_replacement .= $this->formatDate ( $record->getDate(),$format [0]) ;
+								$tag_replacement .= $this->formatDate ( $record->getDate(),$this->get_format($format, 0)) ;
 							} else if ($fact_type == 'PLAC') {
-								$tag_replacement .= $this->formatPlace ( $record->getPlace(),$format [0]);
+								$tag_replacement .= $this->formatPlace ( $record->getPlace(),$this->get_format($format, 0));
 							} else {
 								$tag_replacement .= $record->getAttribute($fact_type);
 							}
@@ -1974,7 +2054,7 @@ class ExportGraphmlModule extends AbstractModule implements
 							if ($n == 1) {
 								// file name has no ending stop code
 								exit ('Image name \'' . $filename . "\' does not have an ending" );
-							} else if ($format[0] == "NoExtension") {
+							} else if ($this->get_format($format, 0) == "NoExtension") {
 								// return file name without ending	 
 									$tag_replacement .= implode(".", array_slice($filename_array,0,$n-1));
 							} else {
@@ -1982,6 +2062,9 @@ class ExportGraphmlModule extends AbstractModule implements
 								$tag_replacement .= $filename;
 							} 
 							//$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
+							break;	
+						case "FeMediaId" :
+							$tag_replacement .= $record->getXref();
 							break;	
 						case "FeMediaCaption" :
 							$tag_replacement .= $record->getTitle();
@@ -1993,7 +2076,7 @@ class ExportGraphmlModule extends AbstractModule implements
 							break;	
 						case "Portrait" :
 							$tag_replacement .= $this->getPortrait ( $record, 
-									$format [0] );
+									$this->get_format($format, 0) );
 							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
 							break;
 						case "PortraitSize" :
@@ -2016,7 +2099,7 @@ class ExportGraphmlModule extends AbstractModule implements
 							break;
 						case "MarriageDate" :
 							$tag_replacement .= $this->formatDate ( 
-									$record->getMarriageDate (), $format [0] );
+									$record->getMarriageDate (), $this->get_format($format, 0) );
 							$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
 							break;
 						case "MarriagePlace" :
@@ -2025,7 +2108,7 @@ class ExportGraphmlModule extends AbstractModule implements
 							$marriage = $record->getMarriage ();
 							if ($marriage) {
 								$tag_replacement .= $this->formatPlace ( 
-										$marriage->getPlace (), $format [0] ) ;
+										$marriage->getPlace (), $this->get_format($format, 0) ) ;
 								$tag_replacement = $this->substituteSpecialCharacters($tag_replacement, $doctype );
 							}
 							break;
@@ -2128,7 +2211,6 @@ class ExportGraphmlModule extends AbstractModule implements
 							if (!empty($media_links)) {
 								foreach ($media_links as $media_link) {
 									$id = str_replace("@","",$media_link->getValue());
-
 									$media_record = Media::getInstance($id, $record_context->getTree());
 									
 									if (in_array($id, $include_exclude_media["include"])) {
@@ -2138,8 +2220,8 @@ class ExportGraphmlModule extends AbstractModule implements
 									} else {
 										$use = true;
 										// check if type is in format[0]
-										if ($comp["format"] [0] != "") {
-											$types = explode ( ',', $comp["format"] [0]);
+										if ($this->get_format($format, 0) != "") {
+											$types = explode ( ',', $this->get_format($format, 0));
 											$type = $media_record->getMediaType();
 											if (!in_array($type, $types)) {
 												$use = false;
@@ -2147,8 +2229,8 @@ class ExportGraphmlModule extends AbstractModule implements
 										}
 
 										// check if ending is in format[1]
-										if ($comp["format"] [1] != "") {
-											$endings = array_map("strtolower",explode ( ',', $comp["format"] [1]));
+										if ($this->get_format($format, 1) != "") {
+											$endings = array_map("strtolower",explode ( ',', $this->get_format($format, 1)));
 											
 											$filename_array = explode(".",$media_record->getFilename());
 											$n = count($filename_array);
@@ -2163,6 +2245,15 @@ class ExportGraphmlModule extends AbstractModule implements
 										}
 									}
 									
+									// check if media already shown
+									if ($this->get_format($format, 2) == "unique") {
+										if (in_array($id, $media_included)) {
+											$use = false;
+										} else {
+											$media_included[] = $id;
+										}
+									}
+										
 									if ($use and $media_record->canShow()) {
 										$counter += 1;
 										$tag_replacement .= $this->substitutePlaceHolder($media_record, 
@@ -2219,21 +2310,23 @@ class ExportGraphmlModule extends AbstractModule implements
 					$new_string = '';
 				}
 			}
+		
+			// add remaining strings to $nodetext
+			$new_string = $this->removeBrackets ( $new_string, $brackets );
+			$nodetext .= $new_string;
+			// remove all remaining brackets (which contain record data)
+			$nodetext = preg_replace ( 
+					array ("/\Q" . $brackets [0] . "\E/",
+							"/\Q" . $brackets [1] . "\E/" 
+					), array ("","" 
+					), $nodetext );
+			
+			if ($doctype == "graphml") {
+				$nodetext = preg_replace ( "/<html>\s*<\/html>/", "", $nodetext );
+			}
+		
 		}
 		
-		// add remaining strings to $nodetext
-		$new_string = $this->removeBrackets ( $new_string, $brackets );
-		$nodetext .= $new_string;
-		// remove all remaining brackets (which contain record data)
-		$nodetext = preg_replace ( 
-				array ("/\Q" . $brackets [0] . "\E/",
-						"/\Q" . $brackets [1] . "\E/" 
-				), array ("","" 
-				), $nodetext );
-		
-		if ($doctype == "graphml") {
-			$nodetext = preg_replace ( "/<html>\s*<\/html>/", "", $nodetext );
-		}
 		
 		return $nodetext;
 	}
@@ -2355,6 +2448,7 @@ class ExportGraphmlModule extends AbstractModule implements
 	 * @return list record list for individuals and families
 	 */
 	private function getRecords($tree, $sort = FALSE) {
+
 		// Get all individuals
 		$rowsInd = Database::prepare ( 
 				"SELECT i_id AS xref" .
@@ -2403,11 +2497,18 @@ class ExportGraphmlModule extends AbstractModule implements
 													'…' ), $name );
 				
 											$generationInd [$xrefInd] = array ("branch" => $branch,
+													"sub_branch" => "",
+													"sub_branch_id" => -1,
+													"children" => array(),
+													"parents" => array(),
+													"spouse" => array(),
 													"generation" => $generation,"name" => $name,
 													"givenname" => ExportGraphmlModule::getGivenName (
 															$record ),
 													"reference" => $reference,
-													"ancestor" => ''
+													"ancestor" => '',
+													"sub_branch" => '',
+													"xref" => $xrefInd
 											);
 								} else {
 									$inds[$key]["ind"] = null;
@@ -2429,8 +2530,9 @@ class ExportGraphmlModule extends AbstractModule implements
 						//$families = array();
 						$FAMC = $ind->getChildFamilies ();
 						foreach ( $FAMC as $record ) {
-							
-							foreach (array($record->getHusband (), $record->getWife ()) as $rec ) {
+							$parents = array($record->getHusband (), $record->getWife ());
+							foreach ($parents as $rec ) {
+								if ($rec !== null) $generationInd[$xrefInd]["parents"][] = $rec->getXref();
 								if ($rec !== null and
 										! array_key_exists ($rec->getXref(), $generationInd )) {
 											$new_inds[] = array("ind" => $rec,
@@ -2440,10 +2542,6 @@ class ExportGraphmlModule extends AbstractModule implements
 							}
 								
 							
-							//$families[] = array("xref" => $family->getXref (),
-							//		"gen" => $generation - 1,
-							//		"ref" => $reference . "-"
-							//);
 						}
 						;
 						
@@ -2453,23 +2551,27 @@ class ExportGraphmlModule extends AbstractModule implements
 						// get spouse and childreen
 						$FAMS = $ind->getSpouseFamilies ();
 						foreach ( $FAMS as $record ) {
-							//$families[] = array("xref" => $family->getXref (),
-							//		"gen" => $generation,
-							//		"ref" => $reference . "0");
 							
 							// get spouse
-							foreach (array($record->getHusband (), $record->getWife ()) as $rec ) {
-								if ($rec !== null and
-										! array_key_exists ($rec->getXref(), $generationInd )) {
-											$new_inds[] = array("ind" => $rec,
-													"ref" => $reference . '0' . $rec->getSex(),
-													"generation" => $generation);
-										}
-							}
+							if ($ind->getSex() == "F") {
+								$spouse = $record->getHusband ();
+							} else {
+								$spouse = $record->getWife ();
+							};
+							if ($spouse !== null )	$generationInd[$xrefInd]["spouse"][] = $spouse->getXref();
+							//foreach ($spouse as $rec ) {
+							if ($spouse !== null and
+									! array_key_exists ($spouse->getXref(), $generationInd )) {
+										$new_inds[] = array("ind" => $spouse,
+												"ref" => $reference . '0' . $spouse->getSex(),
+												"generation" => $generation);
+								}
+							//}
 							
 							// get children
 							$children = $record->getChildren ();
 							foreach($children as $child) {
+								$generationInd[$xrefInd]["children"][] = $child->getXref();
 								if (! array_key_exists ($child->getXref(), $generationInd )) {
 									$new_inds[] = array("ind" => $child,
 											"ref" => $reference . '+' . $child->getSex(),
@@ -2492,8 +2594,8 @@ class ExportGraphmlModule extends AbstractModule implements
 			# with this individual and return only one tree
 			#
 			$branch = 1;
-			if ($_GET["refid"]) {
-				$xref = $_GET["refid"];
+			if ($_POST["refid"]) {
+				$xref = $_POST["refid"];
 				$record = Individual::getInstance ( $xref, $tree );
 				
 				setFAMSFAMC ( $tree, array(array("ind" => $record, 
@@ -2513,35 +2615,126 @@ class ExportGraphmlModule extends AbstractModule implements
 						;
 			}
 				;
+				
+			// Now set sub branches
+			// First get seeds for branches
+			$seeds = array();
+			$all_seeds = $_POST["branch_seeds"];
+			if (strlen($all_seeds) > 1) {
+				$sep = $all_seeds[0];
+				$all_seeds = substr($all_seeds,1);
+				foreach( explode("\n",$all_seeds) as $row) {
+					$row = trim($row);
+					$cols = explode($sep,$row);
+					if (count($cols) == 3) {
+						$seeds[] = array("xref" => $cols[0],
+								"name" => $cols[1], 
+								"direction" => $cols[2]
+						);
+					}
+				}
+			}
+			
+			$number_of_branches = $branch - 1;
+			$number_of_sub_branches = count($seeds);
+			
+			// Now set sub branches
+			
+			foreach ($seeds as $seed_no => $seed) {
+				$xref = $seed["xref"];
+				$name = $seed["name"];
+				$direction = $seed["direction"];
+				// set branch for seed
+				$generationInd[$xref]["sub_branch"] = $name;
+				// select only one direction
+				if ($direction == 'ancestors') {
+					// select only ancestors (parents)
+					$inds = $generationInd[$xref]["parents"];
+				} else if ($direction == 'descendants'){
+					// selects descendants (spouse and children)
+					$inds = array_merge( 
+							$generationInd[$xref]["spouse"],
+							$generationInd[$xref]["children"]);
+				} else if ($direction == 'both'){
+					$inds = array_merge(
+							$generationInd[$xref]["parents"],
+							$generationInd[$xref]["spouse"],
+							$generationInd[$xref]["children"]);
+				} else {
+					exit ('Wrong seed type for ' .  $seed["name"]);
+				}
+				
+				do {
+					// set sub branches
+					$new_inds = array();
+					foreach ($inds as $ind) {
+						if ($name != $generationInd[$ind]["sub_branch"]) {
+							$generationInd[$ind]["sub_branch"] = $name;
+							$generationInd[$ind]["sub_branch_id"] = $seed_no;
+							$new_inds = array_merge($new_inds,
+								$generationInd[$ind]["parents"],
+								$generationInd[$ind]["spouse"],
+								$generationInd[$ind]["children"]);							
+						}
+					}
+					
+					$inds = $new_inds;
+				} while (count($inds) > 0);
+				
+			}
+				
+
 			// now sort for branches and generations
 			
 			foreach ( $generationInd as $key => $row ) {
 				$a_branch [$key] = $row ['branch'];
+				$a_sub_branch [$key] = $row ['sub_branch_id'];
 				$a_generation [$key] = $row ['generation'];
 				$a_name [$key] = $row ['name'];
 				$a_givenname [$key] = $row ['givenname'];
 			}
 			
-			array_multisort ( $a_branch, SORT_ASC, $a_generation, SORT_ASC, 
+			array_multisort ( $a_branch, SORT_ASC, $a_sub_branch, SORT_ASC, $a_generation, SORT_ASC,  
 					$a_name, SORT_ASC, $a_givenname, SORT_ASC, SORT_STRING, 
 					$generationInd );
 			
 			// now add ids
 			$no = 0;
 			$gen_no = 0;
+			$sub_branch_no = 1;
 			$last_gen = array_values ( $generationInd ) [0] ['generation'];
+			$last_branch = array_values ( $generationInd ) [0] ['branch'];
+			$last_sub_branch = array_values ( $generationInd ) [0] ['sub_branch_id'];
 			$first_gen = $last_gen;
 			foreach ( $generationInd as $key => $row ) {
-				if ($row ['generation'] > $last_gen) {
-					$last_gen = $row ['generation'];
+				$no += 1;
+				$generationInd [$key] ['no'] = $no;
+				//
+				$branch = $row ['branch'];
+				$sub_branch = $row ['sub_branch_id'];
+				$generation =  $row ['generation'];
+				if ($sub_branch != $last_sub_branch) {
+					$sub_branch_no += 1;
+				}; 
+				if ($branch != $last_branch) {
+					$sub_branch_no = 1;
+					$first_gen = $generation;
+				};
+				if ($branch != $last_branch or $sub_branch != $last_sub_branch or 
+						$generation != $last_gen) {
 					$gen_no = 0;
 				}
-				$no += 1;
+				$last_sub_branch = $sub_branch;
+				$last_branch = $branch;
+				$last_gen = $generation;
+				//
 				$gen_no += 1;
-				$generationInd [$key] ['no'] = $no;
-				$generationInd [$key] ['gen_no'] = (1 + $last_gen - $first_gen) .
-						 "." . $gen_no;
-				
+				$this_gen_no = (1 + $generation - $first_gen) . "." . $gen_no;
+				if ($number_of_sub_branches > 0) $this_gen_no = $sub_branch_no . "-" . $this_gen_no;
+				if ($number_of_branches > 1) $this_gen_no = $branch . "-" . $this_gen_no;
+				$generationInd [$key] ['gen_no'] = $this_gen_no;
+				// reset generation no
+				$generationInd [$key] ['generation'] = (1 + $generation - $first_gen);
 				// now consolidate "reference"
 				$ref = $generationInd [$key] ['reference'];
 				$search = array('0+','0-','-M','-F','+M','+F','0F','0M');
@@ -2550,16 +2743,16 @@ class ExportGraphmlModule extends AbstractModule implements
 				// remove starting r
 				if ($ref[0] == "r") {
 					$ref = substr($ref, 1);
+					// now check if direct ancestor or direct descendant
+					if (!preg_match('/[WHSD]/' , $ref) or !preg_match('/[WHFM]/' , $ref)) {
+						// direct ancestor or direct descendant
+						$generationInd [$key] ['ancestor'] = 1;
+					} else if (preg_match('/^[FM]*[SD]*$/' , $ref)) {
+						// indirect 
+						$generationInd [$key] ['ancestor'] = 2;
+					}
 				} else {
 					$ref = '';
-				}
-				// now check if direct ancestor or direct descendant
-				if (!preg_match('/[WHSD]/' , $ref) or !preg_match('/[WHFM]/' , $ref)) {
-					// direct ancestor or direct descendant
-					$generationInd [$key] ['ancestor'] = 1;
-				} else if (preg_match('/^[FM]*[SD]*$/' , $ref)) {
-					// indirect 
-					$generationInd [$key] ['ancestor'] = 2;
 				}
 				
 				// count same symbols
@@ -2569,19 +2762,57 @@ class ExportGraphmlModule extends AbstractModule implements
 				}
 				// now replace with custom symbols
 				$search = array('F', 'M', 'S', 'D', 'W', 'H');
-				$rep 	= array($_GET["ref_father"] . '-', $_GET["ref_mother"] . '-', 
-						$_GET["ref_son"] . '-', $_GET["ref_daughter"] . '-',
-						$_GET["ref_wife"] . '-', $_GET["ref_husband"] . '-');
+				$rep 	= array($_POST["ref_father"] . '-', $_POST["ref_mother"] . '-', 
+						$_POST["ref_son"] . '-', $_POST["ref_daughter"] . '-',
+						$_POST["ref_wife"] . '-', $_POST["ref_husband"] . '-');
 				$ref = str_replace($search,$rep,$ref);
 				$ref = substr($ref,0,-1);
 				// set reference
 				$generationInd [$key] ['reference'] = $ref;
 			}
+			
+			// now copy seeds to main branch
+			if (count($seeds) > 0) {
+				foreach ($seeds as $key => $seed) {
+					$xref = $seed['xref'];
+					$xref_main = $xref .'_main';
+					$generationInd[$xref_main] = $generationInd[$xref];
+					$generationInd[$xref_main]['sub_branch'] = "";
+					$generationInd[$xref_main]['sub_branch_id'] = $key;
+				}
+				
+				// now sort again for branches and generations					
+				foreach ( $generationInd as $key => $row ) {
+					$a_branch [$key] = $row ['branch'];
+					$a_sub_branch [$key] = $row ['sub_branch_id'];
+					$a_generation [$key] = $row ['generation'];
+					$a_name [$key] = $row ['name'];
+					$a_givenname [$key] = $row ['givenname'];
+				}
+					
+				array_multisort ( $a_branch, SORT_ASC, $a_sub_branch, SORT_ASC, $a_generation, SORT_ASC, 
+						$a_name, SORT_ASC, $a_givenname, SORT_ASC, SORT_STRING,
+						$generationInd );
+				
+			}
+			// copy everything in the final structure
+			$generationInd_out = array();
+			foreach ( $generationInd as $key => $row ) {
+				$branch = $row ['branch'];
+				$sub_branch = $row ['sub_branch'];
+				$generation = $row ['generation'];
+				if (!array_key_exists($branch, $generationInd_out)) $generationInd_out[$branch] = array();
+				if (!array_key_exists($sub_branch, $generationInd_out[$branch])) $generationInd_out[$branch][$sub_branch] = array();
+				if (!array_key_exists($generation, $generationInd_out[$branch][$sub_branch])) $generationInd_out[$branch][$sub_branch][$generation] = array();
+				$generationInd_out[$branch][$sub_branch][$generation][$key] = $row;
+			}
+		} else {
+			$generationInd_out = array();
 		}
 		
 		//
 		
-		return array ($xrefInd, $xrefFam, $generationInd
+		return array ($xrefInd, $xrefFam, $generationInd_out
 		);
 		//return array ($xrefInd, $xrefFam, $generationInd, $generationFam 
 		//);
@@ -2601,7 +2832,7 @@ class ExportGraphmlModule extends AbstractModule implements
 	private function exportGraphml(Tree $tree, $gedout) {
 		
 		// get parameter entered in the web form
-		$parameter = $_GET;
+		$parameter = $_POST;
 		
 		foreach ( array ("label","description" 
 		) as $a ) {
@@ -2926,7 +3157,7 @@ class ExportGraphmlModule extends AbstractModule implements
 		
 		global $include_exclude_media;
 		// get parameter entered in the web form
-		$parameter = $_GET;
+		$parameter = $_POST;
 		
 		$name = "individuals_label_template";
 		// First split the html templates
@@ -2996,54 +3227,82 @@ class ExportGraphmlModule extends AbstractModule implements
 		 */
 		
 		// loop over all individuals
-		$last_branch = 0;
-		foreach ( $generationInd as $xref => $value ) {
-			// increase time limit
-			$this->increaseTimeLimit();
+		//$last_branch = 0;
+		//$last_sub_branch = $generationInd[0]['sub_branch'];
+		//$one_branch = end($generationInd)['branch'] == reset($generationInd)['branch'];
+		//foreach ( $generationInd as $key => $value ) {
+		$no_of_branches = count($generationInd);
+		foreach ( $generationInd as $branch => $branch_array) {
+			$no_of_sub_branches = count($branch_array);
+			$buffer .= $parameter["hierarchy_branch"] .  
+				($no_of_branches == 1 ? '' : " " . $branch) . 
+				"}" . "\n";
+			foreach ( $branch_array as $sub_branch => $sub_branch_array ) {
+				$no_of_generations = count($sub_branch_array);
+				$buffer .= $parameter["hierarchy_sub_branch"] .
+				($no_of_sub_branches == 1 ? '' : " " . $sub_branch) .
+				"}" . "\n";
+				
+				foreach ( $sub_branch_array as $generation => $generation_array ) {
+					$buffer .= $parameter["hierarchy_generation"] .
+					($no_of_generations == 1 ? '' : " " . $generation) .
+					"}" . "\n";
+						
+					foreach ( $generation_array as $key => $value ) {
+						$xref = $value['xref'];
+						// increase time limit
+						$this->increaseTimeLimit();
+						
+						//$branch = $value ['branch'];
+						//$sub_branch = $value ['sub_branch'];
+						//$generation = $value ['generation'];
+						$name = $value ['name'];
+						//$givenname = $value ['givenname'];
+						
+						/*
+						if ($branch > $last_branch) {
+							$buffer .= $parameter["hierarchy_branch"] .  
+							($one_branch ? '' : " " . $branch) . 
+							"}" . "\n";
+							$first_generation = $generation;
+							$last_generation = $generation - 1;
+							$last_branch = $branch;
+						}
+						
+						if ($generation > $last_generation) {
+							$buffer .= $parameter["hierarchy_generation"] . " " .
+									 ($generation - $first_generation + 1) . "}" . "\n";
+							$last_generation = $generation;
+						}*/
+						
+						$record = Individual::getInstance ( $xref, $tree );
+						
+						// get parameter for the export
+						$sex = $record->getSex ();
+						if ($sex == "F") {
+							$s = 'female';
+						} elseif ($sex == "M") {
+							$s = 'male';
+						} else {
+							$s = 'unknown';
+						}
+						
+						// loop to create the output for the node label
+						// and the node description
+						
+						$nodetext = $this->substitutePlaceHolder ( $record, $record,
+									$template, "latex", $brackets, $fact_symbols );
 			
-			$branch = $value ['branch'];
-			$generation = $value ['generation'];
-			$name = $value ['name'];
-			$givenname = $value ['givenname'];
-			
-			if ($branch > $last_branch) {
-				$buffer .= $parameter["hierarchy_tree"] . " " . $branch . "}" . "\n";
-				$first_generation = $generation;
-				$last_generation = $generation - 1;
-				$last_branch = $branch;
-			}
-			
-			if ($generation > $last_generation) {
-				$buffer .= $parameter["hierarchy_generation"] . " " .
-						 ($generation - $first_generation + 1) . "}" . "\n";
-				$last_generation = $generation;
-			}
-			
-			$record = Individual::getInstance ( $xref, $tree );
-			
-			// get parameter for the export
-			$sex = $record->getSex ();
-			if ($sex == "F") {
-				$s = 'female';
-			} elseif ($sex == "M") {
-				$s = 'male';
-			} else {
-				$s = 'unknown';
-			}
-			
-			// loop to create the output for the node label
-			// and the node description
-			
-			$nodetext = $this->substitutePlaceHolder ( $record, $record,
-						$template, "latex", $brackets, $fact_symbols );
-
-			// no line break before $nodetext allowed
-			$buffer .= $nodetext  . "\n";
-			
-			// write to file if buffer is full
-			if (strlen ( $buffer ) > 65536) {
-				$this->graphml_fwrite ( $gedout, $buffer );
-				$buffer = '';
+						// no line break before $nodetext allowed
+						$buffer .= $nodetext  . "\n";
+						
+						// write to file if buffer is full
+						if (strlen ( $buffer ) > 65536) {
+							$this->graphml_fwrite ( $gedout, $buffer );
+							$buffer = '';
+						}
+					}
+				}
 			}
 		}
 		
